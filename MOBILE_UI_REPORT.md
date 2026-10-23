@@ -149,3 +149,22 @@ satellites and particle buckets as pictures re-recorded round-robin.
   family-pod wizard. A Health agent was not added either. Profile-menu rows without a destination open a placeholder.
 - **The SwiftUI app** (`ios/`) is untouched and still uses its own bundle id. Its share extension, inbox and notice
   screens have no counterpart in the new app yet.
+
+## 8. Stone design v2 (visual refresh, no behaviour change)
+
+Branch `feat/stone-design-v2`. Only the drawing of the core gem, the five satellites and the mini gems changed. Taps,
+gestures, flows and data are untouched. Side by side: `design-reference/compare/stones_video_v1_v2.png`.
+
+| Stone | v2 changes |
+|---|---|
+| Core gem | Larger facets (52-point hull); hairline edges with a soft glow; light pooling at the lower right with the scenario palette swept across the gem (cyan → pink in calm); clear upper facets showing the far wall and its faint edges; inner glow; star glint; occasional corner sparkles |
+| Satellites | Rough "uncut" shapes (per-stone proportions, stronger jitter); dark heart and bright rim; glowing agent-colour edges; faint inner edges; glitter; soft halo |
+
+**Going back to the original design.** Both versions are kept:
+
+- **One line:** in `mobile/src/familyos/graphics/stoneStyle.ts`, set `STONE_STYLE = 'v1' as StoneStyle`. v1's files
+  (`crystalRender.ts`, `crystalGeometry.ts`) are byte-for-byte unchanged.
+- **Whole app as approved:** `git checkout ui-v1-approved` (tag) or `git checkout feat/mobile-familyos-ui` (branch).
+
+v2 lives in `crystalRenderV2.ts` and `stoneGeometryV2.ts`. Per-frame work on the simulator: v1 1.32 ms, v2 1.55 ms
+(+17%; larger facets and shared point objects pay for most of the new detail). Low-power mode still applies.

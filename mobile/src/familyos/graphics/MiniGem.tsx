@@ -8,7 +8,7 @@ import { paletteOf, type Scenario } from '../theme/stateThemes';
 import { hexToRgb } from '../theme/tokens';
 import { ambientEffect } from './ambientShader';
 import { coreMeshLow } from './crystalGeometry';
-import { drawCrystal } from './crystalRender';
+import { drawStone } from './stoneStyle';
 import { loopPhase } from './orbitLayout';
 
 /** Palette derived from one agent colour: light → agent → deep, mostly tinted. */
@@ -62,7 +62,7 @@ function MiniGemView({ size, scenario = 'calm', agentColor }: Props) {
   const picture = useDerivedValue(() =>
     createPicture((canvas) => {
       const ph = loopPhase(clock.value);
-      drawCrystal(canvas, coreMeshLow, {
+      drawStone(canvas, coreMeshLow, {
         cx: size / 2,
         cy: size / 2,
         R,

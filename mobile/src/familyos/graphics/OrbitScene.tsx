@@ -19,8 +19,8 @@ import {
 import { useDerivedValue, useFrameCallback, useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { AGENT_IDS, colors, hexToRgb } from '../theme/tokens';
 import { ambientEffect } from './ambientShader';
-import { coreMesh, coreMeshLow, satelliteMeshes } from './crystalGeometry';
-import { drawCrystal } from './crystalRender';
+import { coreMeshLow } from './crystalGeometry';
+import { drawStone, stoneCoreMesh, stoneSatelliteMeshes } from './stoneStyle';
 import { drawBurst, drawMorphBucket, drawMorphRing, morphInFlight, type MorphState } from './ParticleMorph';
 import { currentPalette, profAdd, type OrbitScene } from './sceneState';
 import { gemAt, loopPhase, satellitePos, satelliteRadius, type Frame } from './orbitLayout';
@@ -61,13 +61,14 @@ function morphStateOf(scene: OrbitScene, frame: Frame, ph: number): MorphState {
 function recordSatellite(i: number, ph: number, hl: number, low: boolean, still: boolean, sr: number, pal: number[]): SkPicture {
   'worklet';
   return createPicture((c) => {
-    drawCrystal(c, satelliteMeshes[i], {
+    drawStone(c, stoneSatelliteMeshes[i], {
       cx: 0,
       cy: 0,
       R: sr,
       rotY: still || low ? 0.6 + i : SAT_SPIN[i] * ph + i,
       tiltX: 0.5 + (still ? 0 : 0.25 * Math.sin(2 * ph + i)),
-      phase: 0,
+      // Drives the v2 glitter twinkle (v1 ignores phase on satellites).
+      phase: still ? 0 : ph,
       palette: pal,
       agent: AGENT_RGB[i],
       alpha: hl >= 0 && hl !== i ? 0.6 : 1,
@@ -238,7 +239,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
             // Fades (app open, dashboard drag) only: a small alpha layer.
             const lp = Skia.Paint();
             lp.setAlphaf(a);
-            canvas.saveLayer(lp, Skia.XYWHRect(-sr * 1.6, -sr * 1.6, sr * 3.2, sr * 3.2));
+            canvas.saveLayer(lp, Skia.XYWHRect(-sr * 2, -sr * 2, sr * 4, sr * 4));
             canvas.drawPicture(pic);
             canvas.restore();
           } else {
@@ -265,7 +266,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       const tremble = pal[20] * (1 - t);
       const sq = scene.squash.value;
       const introScale = 0.85 + 0.15 * intro;
-      if ((dbg & 4) === 0) drawCrystal(canvas, low ? coreMeshLow : coreMesh, {
+      if ((dbg & 4) === 0) drawStone(canvas, low ? coreMeshLow : stoneCoreMesh, {
         cx: g.x + (still ? 0 : tremble * Math.sin(720 * ph)),
         cy: g.y + (still ? 0 : tremble * Math.cos(864 * ph)),
         R: g.r * introScale,
