@@ -168,3 +168,10 @@ gestures, flows and data are untouched. Side by side: `design-reference/compare/
 
 v2 lives in `crystalRenderV2.ts` and `stoneGeometryV2.ts`. Per-frame work on the simulator: v1 1.32 ms, v2 1.55 ms
 (+17%; larger facets and shared point objects pay for most of the new detail). Low-power mode still applies.
+
+Tested on the Xiaomi 11 Lite NE (dev build, 300-frame samples): Home at **60 fps in calm, insight, heads-up and
+urgent** (p95 16.6 ms, no frames over 20 ms); summary walkthrough 58 fps (p95 16.6 ms, 12 slow frames during particle
+flights; v1 had 16). Touch flows re-checked: satellite tap and long-press, swipe-up Dashboard, hardware back. On the
+iOS simulator every screen with a stone was checked: four moods, walkthrough, sheets, Dashboard, agent screen and
+Loading. Known dev-only quirk, the same with v1: after a full JavaScript reload on the iOS simulator the Skia canvas
+stays black until the app is relaunched. A normal launch renders correctly.
