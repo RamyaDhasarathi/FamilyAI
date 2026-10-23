@@ -294,3 +294,14 @@ export function validateField(f: FieldDef, v: unknown): string | null {
   if (typeof v === 'string' && f.validate) return f.validate(v);
   return null;
 }
+
+/** Whether a section's saved data still passes its fields for an age group,
+ *  e.g. after an 18th birthday swaps the allowance for a bank account. */
+export function sectionPasses(section: SectionId, m: FamilyMember, age: number, group: AgeGroup): boolean {
+  const data = m.sections[section].data;
+  const fields = fieldsFor(section, m, age, group);
+  const draft: Record<string, unknown> = { ...data };
+  for (const f of fields) draft[f.key] = fieldValue(f, m, data);
+  const view = { ...m, ...draft } as FamilyMember;
+  return fields.filter((f) => !f.when || f.when(draft, view)).every((f) => !validateField(f, draft[f.key]));
+}

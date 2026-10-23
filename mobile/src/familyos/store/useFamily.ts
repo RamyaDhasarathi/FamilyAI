@@ -5,7 +5,8 @@
 import { create } from 'zustand';
 import type { FamilyMember, MemberBasics, SectionId, SectionStatus } from '../services/interfaces';
 import { familyService } from '../mocks/familyService';
-import { dependentsOf, displayName, sectionsNeedingUpdate, sortMembers, stageOf } from '../family/model';
+import { SECTION_IDS, ageGroupOf, ageOf, dependentsOf, displayName, sectionsNeedingUpdate, sortMembers, stageOf } from '../family/model';
+import { sectionPasses } from '../family/fields';
 import { useFamilyOS } from './useFamilyOS';
 
 /** How long "Removed · Undo" stays before the member is purged (§4.9). */
@@ -28,7 +29,7 @@ interface FamilyState {
   pending: Record<string, PendingRemoval>;
 
   load(): Promise<void>;
-  add(basics: MemberBasics, finishLater: boolean): Promise<FamilyMember>;
+  add(basics: MemberBasics): Promise<FamilyMember>;
   updateBasics(id: string, patch: Partial<MemberBasics>): Promise<FamilyMember>;
   saveSection(id: string, section: SectionId, data: Record<string, unknown>, status: SectionStatus): Promise<FamilyMember>;
   /**
@@ -55,17 +56,26 @@ export const useFamily = create<FamilyState>((set, get) => ({
     set({ members, loaded: true });
   },
 
-  async add(basics, finishLater) {
+  async add(basics) {
     const m = await familyService.createMember(basics);
     set({ members: sortMembers([...get().members, m]), highlight: m.id });
-    const toast = useFamilyOS.getState().toast;
-    if (finishLater) toast(`${displayName(m)} added to your family`);
+    useFamilyOS.getState().toast(`${displayName(m)} added to your family`);
     return m;
   },
 
   async updateBasics(id, patch) {
     const before = get().members.find((x) => x.id === id);
-    const m = await familyService.updateBasics(id, patch);
+    let m = await familyService.updateBasics(id, patch);
+    // A new age group can bring new required fields (§13.6 child / teen / adult
+    // variants): sections that no longer pass are marked as needing an update.
+    if (before && patch.dateOfBirth && ageGroupOf(ageOf(before.dateOfBirth)) !== ageGroupOf(ageOf(m.dateOfBirth))) {
+      const age = ageOf(m.dateOfBirth);
+      for (const s of SECTION_IDS) {
+        if (m.sections[s].status === 'complete' && !sectionPasses(s, m, age, ageGroupOf(age))) {
+          m = await familyService.updateSection(id, s, m.sections[s].data, 'needsUpdate');
+        }
+      }
+    }
     set({ members: replace(get().members, m) });
     // A date-of-birth change can move someone to another avatar stage (§4.6).
     if (before && patch.dateOfBirth && stageOf(before).stage !== stageOf(m).stage) {

@@ -36,6 +36,8 @@ interface Props {
   onClosed?: () => void;
   /** Lift above the keyboard and shrink to fit (Chat). */
   keyboardAware?: boolean;
+  /** Solid fill, for screens without a blurred scene behind (Family sheets). */
+  opaque?: boolean;
 }
 
 export function ModalCard({
@@ -50,6 +52,7 @@ export function ModalCard({
   fixedFrac,
   onClosed,
   keyboardAware,
+  opaque,
 }: Props) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -121,7 +124,7 @@ export function ModalCard({
       <Animated.View style={[styles.anchor, lift]} pointerEvents="box-none">
         <Animated.View style={[card, style, fixedH ? styles.fill : null]}>
           {closeAbove ? <ClosePill onPress={onClose} style={styles.closeAbove} /> : null}
-          <Glass radius={radii.sheet} fill={colors.sheetFill} tint={tint} style={fixedH ? styles.fill : { maxHeight: maxH }}>
+          <Glass radius={radii.sheet} fill={opaque ? 'rgba(24,27,35,0.985)' : colors.sheetFill} tint={tint} style={fixedH ? styles.fill : { maxHeight: maxH }}>
             {header ? (
               <GestureDetector gesture={pan}>
                 <View>{header}</View>
