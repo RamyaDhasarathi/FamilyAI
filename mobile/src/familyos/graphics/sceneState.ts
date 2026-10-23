@@ -35,6 +35,10 @@ export interface OrbitScene {
   /** Celebratory burst when the needs-you list empties, 0..1. */
   burst: SharedValue<number>;
   lowPower: SharedValue<boolean>;
+  /** Dev-only profiling: 1 = skip ambient shader, 2 = skip satellites, 4 = skip core. */
+  debugMask: SharedValue<number>;
+  /** Dev-only profiling: ms spent per section [satRecord, satDraw, core, morph, picture, uniforms]. */
+  prof: SharedValue<number[]>;
   morph: SharedValue<MorphData>;
 }
 
@@ -60,11 +64,25 @@ export function createOrbitScene(initial: Scenario): OrbitScene {
     backdrop: makeMutable(0),
     burst: makeMutable(0),
     lowPower: makeMutable(false),
-    morph: makeMutable<MorphData>({ n: 0, shapes: [], delay: [], sway: [], phase: [] }),
+    debugMask: makeMutable(0),
+    prof: makeMutable([0, 0, 0, 0, 0, 0]),
+    morph: makeMutable<MorphData>({ n: 0, shapes: [], delay: [], sway: [], phase: [], sinP: [], cosP: [] }),
   };
 }
 
 /** Current palette, blended between the previous and next scenario. */
+/** Dev profiling: add elapsed ms to one section (no-op cost outside dev). */
+export function profAdd(s: OrbitScene, k: number, t0: number) {
+  'worklet';
+  if (!__DEV__) return;
+  const dt = performance.now() - t0;
+  s.prof.modify((a) => {
+    'worklet';
+    a[k] += dt;
+    return a;
+  }, false);
+}
+
 export function currentPalette(s: OrbitScene): number[] {
   'worklet';
   const a = s.paletteFrom.value;

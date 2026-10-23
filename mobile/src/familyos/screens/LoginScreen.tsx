@@ -86,8 +86,8 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
           <Pressy onPress={submit} style={[styles.primary, busy && { opacity: 0.6 }]} accessibilityLabel={copy.login.submit} disabled={busy}>
             <AppText style={[T.bodyStrong, { color: '#fff' }]}>{busy ? '…' : copy.login.submit}</AppText>
           </Pressy>
-          <Pressy onPress={submit} style={styles.secondary} accessibilityLabel="Continue with Google">
-            <AppText style={T.bodyStrong}>Continue with Google</AppText>
+          <Pressy onPress={submit} style={styles.secondary} accessibilityLabel={copy.login.google}>
+            <AppText style={T.bodyStrong}>{copy.login.google}</AppText>
           </Pressy>
           <Pressy onPress={() => toast(copy.login.otpToast)} style={styles.link} accessibilityLabel={copy.login.otp}>
             <AppText style={[T.smallStrong, { color: '#A99FFF' }]}>{copy.login.otp}</AppText>

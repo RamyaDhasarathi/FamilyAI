@@ -1,7 +1,7 @@
 // Glass toast pill above the bottom bar; auto-hides after 2.2 s (AGENT.md §8.1.8).
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useFamilyOS, type Toast } from '../store/useFamilyOS';
 import { durations } from '../theme/motion';
 import { colors } from '../theme/tokens';
@@ -15,7 +15,7 @@ function ToastPill({ toast }: { toast: Toast }) {
     return () => clearTimeout(id);
   }, [toast.id, dismiss]);
   return (
-    <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOutDown.duration(200)} style={styles.pill}>
+    <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOut.duration(200)} style={styles.pill}>
       <AppText style={[T.smallStrong, styles.text]} accessibilityLiveRegion="polite">
         {toast.text}
       </AppText>

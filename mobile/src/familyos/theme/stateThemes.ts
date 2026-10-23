@@ -32,7 +32,7 @@ export const scenarioThemes: Record<Scenario, ScenarioTheme> = {
   calm: {
     label: 'CALM',
     dot: '#4DFF8C',
-    core: [hexToRgb('#3CEBDF'), hexToRgb('#EE86DA'), hexToRgb('#6F8DFF')],
+    core: [hexToRgb('#3CEBDF'), hexToRgb('#4FCBF2'), hexToRgb('#EE86DA')],
     tintAmount: 0.6,
     halo: hexToRgb('#2CD9C0'),
     bgTint: [0.04, 0.2, 0.21],

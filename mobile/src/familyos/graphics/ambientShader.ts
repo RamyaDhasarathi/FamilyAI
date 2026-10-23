@@ -26,6 +26,8 @@ uniform float3 satCols[5];
 uniform float satR;
 uniform float satAmt;
 uniform float lowPower;
+// 1 = transparent background (mini gem over other content): alpha follows brightness.
+uniform float clearBg;
 
 float hash(float2 p) {
   p = fract(p * float2(123.34, 456.21));
@@ -69,6 +71,7 @@ float dustLayer(float2 d, float R, float seed, float density) {
 }
 
 half4 main(float2 p) {
+  if (res.x < 2.0) return half4(0.0, 0.0, 0.0, 1.0); // dev profiling: shader off
   float H = max(res.x, res.y);
   float2 d = p - center;
   float dist = length(d);
@@ -122,6 +125,12 @@ half4 main(float2 p) {
 
   // Dither against banding in the soft gradients.
   col += (hash(p) - 0.5) / 255.0;
+  col = max(col, float3(0.0));
+  if (clearBg > 0.5) {
+    // Premultiplied: alpha ≥ every channel, so dark areas become see-through.
+    float a = clamp(max(col.r, max(col.g, col.b)) * 1.6, 0.0, 1.0);
+    return half4(half3(col), half(a));
+  }
   return half4(half3(col), 1.0);
 }
 `;

@@ -10,11 +10,9 @@
 // lights, a Fresnel rim (edge-on faces glow) and a Blinn sparkle.
 import {
   BlendMode,
-  PaintStyle,
-  PointMode,
   Skia,
-  StrokeCap,
   VertexMode,
+  TileMode,
   type SkCanvas,
   type SkColor,
 } from '@shopify/react-native-skia';
@@ -34,6 +32,30 @@ const HK = (() => {
 })();
 /** Camera distance in model radii. Larger = flatter perspective. */
 const CAM = 4.2;
+
+/**
+ * Facet edges drawn inside the triangle batch. Each triangle's corners get
+ * texture coordinates (0,0), (1,0), (0,1); Skia interpolates them, so `p` is
+ * the pixel's barycentric position and min(b) is its distance to the nearest
+ * edge, as a fraction of the triangle. Pixels near an edge get `col` added on
+ * top of the vertex colour (drawVertices with BlendMode.Plus). No paths are
+ * stroked, so edges cost nothing extra per frame. Edge width scales with each
+ * triangle's size (SkSL has no screen-space derivatives), which reads fine
+ * because the facets are of similar size.
+ */
+const edgeEffect = Skia.RuntimeEffect.Make(`
+uniform float w;
+uniform float4 col;
+half4 main(float2 p) {
+  float e = min(min(p.x, p.y), 1.0 - p.x - p.y);
+  float k = 1.0 - smoothstep(w * 0.25, w, e);
+  return half4(col * k);
+}`)!;
+const BARY = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+];
 
 export interface CrystalParams {
   cx: number;
@@ -58,6 +80,12 @@ export interface CrystalParams {
   sy: number;
   /** Fewer passes on low-power devices. */
   lowPower: boolean;
+}
+
+/** One decimal place is plenty for path coordinates and keeps strings short. */
+function r1(x: number) {
+  'worklet';
+  return Math.round(x * 10) / 10;
 }
 
 function clamp01(x: number) {
@@ -105,15 +133,15 @@ function baseColour(pal: number[], tintAmt: number, vv: number, qy: number, rnd:
   const b = ib + (out[2] - ib) * tintAmt;
   // Mixing two hues greys them out; push saturation back up so the glass glows.
   const l = (r + g + b) / 3;
-  out[0] = clamp01(l + (r - l) * 1.45);
-  out[1] = clamp01(l + (g - l) * 1.45);
-  out[2] = clamp01(l + (b - l) * 1.45);
+  out[0] = clamp01(l + (r - l) * 1.75);
+  out[1] = clamp01(l + (g - l) * 1.75);
+  out[2] = clamp01(l + (b - l) * 1.75);
 }
 
 export function drawCrystal(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams) {
   'worklet';
   if (p.alpha <= 0.01) return;
-  const { v, f, e, fr, fc, nv, nf, ne } = m;
+  const { v, f, fr, fc, nv, nf } = m;
   const cY = Math.cos(p.rotY);
   const sY = Math.sin(p.rotY);
   const cX = Math.cos(p.tiltX);
@@ -252,8 +280,8 @@ export function drawCrystal(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams) 
       const fres = Math.pow(1 - nvw, 1.5);
       if (isFront) {
         const f2 = flow * flow;
-        fl[fi] = 0.08 + 1.05 * fres + 1.35 * f2 * (0.45 + 0.55 * lam) + 0.1 * fil;
-        fw[fi] = sp * 0.95 + 0.12 * fres * (0.4 + lam) + 0.12 * f2 * flow * lam;
+        fl[fi] = 0.08 + 1.05 * fres + 1.6 * f2 * (0.45 + 0.55 * lam) + 0.1 * fil;
+        fw[fi] = sp * 0.95 + 0.06 * fres * (0.4 + lam) + 0.05 * f2 * flow * lam;
         fa[fi] = clamp01(0.22 + 0.6 * fres + 0.45 * f2 * (0.3 + 0.7 * lam));
       } else {
         // The inside of the far wall, seen through the dark front facets.
@@ -268,14 +296,33 @@ export function drawCrystal(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams) 
   // 3. Draw order. Intact hull: back faces first, then front (no overlaps
   // within each group). Shattered: shards fly apart and can overlap, so sort
   // everything far → near.
-  if (ex > 0.001) order.sort((i, j) => depth[i] - depth[j]);
+  //
+  // Cost note: every point and colour handed to Skia crosses JSI as an object,
+  // which dominates the frame (measured: ~3 ms for 130 coloured faces, ~2 ms
+  // for edges via drawPoints). So while the gem is intact, its back faces are
+  // drawn as ONE gradient-filled path and all edges as SVG path strings (one
+  // JSI call each); only front faces keep per-corner colours.
+  const intact = ex <= 0.001;
+  if (!intact) order.sort((i, j) => depth[i] - depth[j]);
   else order.sort((i, j) => (front[i] === front[j] ? 0 : front[i] ? 1 : -1));
 
   const pos: { x: number; y: number }[] = [];
+  const tex: { x: number; y: number }[] = [];
   const cols: number[][] = [];
+  let backPath = '';
   for (let k = 0; k < order.length; k++) {
     const fi = order[k];
-    if (isSat && !front[fi] && ex <= 0) continue; // satellites: back faces only via edges
+    if (intact && !front[fi]) {
+      // Satellites show their back only through edges; the core's back wall
+      // becomes one silhouette path (union of back triangles).
+      if (!isSat) {
+        const a = f[fi * 3];
+        const b = f[fi * 3 + 1];
+        const c = f[fi * 3 + 2];
+        backPath += `M${r1(px[a])} ${r1(py[a])}L${r1(px[b])} ${r1(py[b])}L${r1(px[c])} ${r1(py[c])}Z`;
+      }
+      continue;
+    }
     const a0 = fa[fi];
     if (a0 <= 0.003) continue;
     const a = f[fi * 3];
@@ -304,6 +351,7 @@ export function drawCrystal(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams) 
       cy = gy + (cy - gy) * sh + oy;
     }
     pos.push({ x: ax, y: ay }, { x: bx, y: by }, { x: cx, y: cy });
+    tex.push(BARY[0], BARY[1], BARY[2]);
     const lf = fl[fi];
     const wf = fw[fi];
     for (let q = 0; q < 3; q++) {
@@ -319,65 +367,63 @@ export function drawCrystal(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams) 
         g0 = 0.55 * g0 + 0.45 * vb[vi * 3 + 1];
         b0 = 0.55 * b0 + 0.45 * vb[vi * 3 + 2];
         if (front[fi]) {
-          const lv = 0.08 + 1.05 * vfr[vi] + 1.35 * ffl[fi] * ffl[fi] * (0.45 + 0.55 * flm[fi]);
+          const lv = 0.08 + 1.05 * vfr[vi] + 1.6 * ffl[fi] * ffl[fi] * (0.45 + 0.55 * flm[fi]);
           li = 0.55 * lf + 0.45 * lv;
         }
       }
       cols.push([clamp01(r0 * li + wf), clamp01(g0 * li + wf), clamp01(b0 * li + wf * 1.05), a0]);
     }
   }
+  if (backPath) {
+    // The far wall of the glass: dim, palette-tinted, darker towards the rim.
+    const bp = Skia.Path.MakeFromSVGString(backPath);
+    if (bp) {
+      const mid = [pal[3] * 0.3 + 0.03, pal[4] * 0.3 + 0.03, pal[5] * 0.3 + 0.05];
+      const rim = [pal[6] * 0.22 + 0.02, pal[7] * 0.22 + 0.02, pal[8] * 0.26 + 0.04];
+      const bgp = Skia.Paint();
+      bgp.setAntiAlias(true);
+      bgp.setShader(
+        Skia.Shader.MakeRadialGradient(
+          { x: p.cx - p.R * 0.25, y: p.cy - p.R * 0.3 },
+          p.R * 1.25,
+          [Skia.Color([mid[0], mid[1], mid[2], 0.55 * p.alpha]), Skia.Color([rim[0], rim[1], rim[2], 0.48 * p.alpha])],
+          null,
+          TileMode.Clamp
+        )
+      );
+      canvas.drawPath(bp, bgp);
+    }
+  }
+  // 4. Faces + their edges in one draw. Edge brightness: white for the core,
+  // a lifted agent colour for satellites; fades out as the gem shatters.
+  const edgeFade = ex > 0 ? Math.max(0, 1 - ex * 2.5) : 1;
+  const A = p.alpha * edgeFade;
   if (pos.length > 0) {
     // Native MakeVertices accepts plain [r, g, b, a] arrays (JsiSkColor::fromValue),
     // which avoids allocating a Float32Array per corner; the TS type only lists SkColor.
-    const verts = Skia.MakeVertices(VertexMode.Triangles, pos, null, cols as unknown as SkColor[]);
-    const paint = Skia.Paint();
-    canvas.drawVertices(verts, BlendMode.Dst, paint);
-  }
-
-  // 4. Edges: back (seen through the glass), front facets, silhouette rim.
-  const edgeFade = ex > 0 ? Math.max(0, 1 - ex * 2.5) : 1;
-  if (edgeFade <= 0.01) return;
-  const back: { x: number; y: number }[] = [];
-  const fronts: { x: number; y: number }[] = [];
-  const rim: { x: number; y: number }[] = [];
-  for (let k = 0; k < ne; k++) {
-    const a = e[k * 4];
-    const b = e[k * 4 + 1];
-    const fL = front[e[k * 4 + 2]];
-    const fR = front[e[k * 4 + 3]];
-    const list = fL && fR ? fronts : !fL && !fR ? back : rim;
-    list.push({ x: px[a], y: py[a] }, { x: px[b], y: py[b] });
-  }
-  const line = Skia.Paint();
-  line.setStyle(PaintStyle.Stroke);
-  line.setAntiAlias(true);
-  line.setStrokeCap(StrokeCap.Round);
-  const A = p.alpha * edgeFade;
-  if (isSat) {
-    const ag = p.agent!;
-    const lr = Math.min(1, ag[0] * 0.55 + 0.5);
-    const lg = Math.min(1, ag[1] * 0.55 + 0.5);
-    const lb = Math.min(1, ag[2] * 0.55 + 0.5);
-    line.setStrokeWidth(0.8);
-    line.setColor(Skia.Color(`rgba(${Math.round(ag[0] * 255)},${Math.round(ag[1] * 255)},${Math.round(ag[2] * 255)},${0.32 * A})`));
-    canvas.drawPoints(PointMode.Lines, back, line);
-    line.setStrokeWidth(0.9);
-    line.setColor(Skia.Color(`rgba(${Math.round(lr * 255)},${Math.round(lg * 255)},${Math.round(lb * 255)},${(0.7 + 0.3 * p.glow) * A})`));
-    canvas.drawPoints(PointMode.Lines, fronts, line);
-    line.setStrokeWidth(1.1);
-    canvas.drawPoints(PointMode.Lines, rim, line);
-  } else {
-    line.setStrokeWidth(0.6);
-    if (!p.lowPower) {
-      line.setColor(Skia.Color(`rgba(220,235,255,${0.1 * A})`));
-      canvas.drawPoints(PointMode.Lines, back, line);
+    const verts = Skia.MakeVertices(VertexMode.Triangles, pos, tex, cols as unknown as SkColor[]);
+    // Average triangle height in px, to turn an edge width in px into a
+    // barycentric threshold.
+    const triH = p.R * Math.sqrt((4 * Math.PI) / nf) * 0.95;
+    let er = 1;
+    let eg = 1;
+    let eb = 1;
+    let ea = 0.34 * A;
+    let wpx = 0.85;
+    if (isSat) {
+      const ag = p.agent!;
+      er = Math.min(1, ag[0] * 0.55 + 0.5);
+      eg = Math.min(1, ag[1] * 0.55 + 0.5);
+      eb = Math.min(1, ag[2] * 0.55 + 0.5);
+      ea = (0.75 + 0.25 * p.glow) * A;
+      wpx = 1.2;
     }
-    line.setColor(Skia.Color(`rgba(255,255,255,${0.22 * A})`));
-    canvas.drawPoints(PointMode.Lines, fronts, line);
-    line.setStrokeWidth(0.9);
-    line.setColor(Skia.Color(`rgba(235,245,255,${0.34 * A})`));
-    canvas.drawPoints(PointMode.Lines, rim, line);
-
+    const paint = Skia.Paint();
+    paint.setShader(edgeEffect.makeShader([Math.min(0.45, wpx / triH), er * ea, eg * ea, eb * ea, ea]));
+    canvas.drawVertices(verts, BlendMode.Plus, paint);
+  }
+  if (edgeFade <= 0.01) return;
+  if (!isSat) {
     // Specular sparkle on up to three faces that face the key light.
     const glint = Skia.Paint();
     glint.setAntiAlias(true);

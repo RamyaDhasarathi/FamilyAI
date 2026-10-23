@@ -43,7 +43,7 @@ export function TimelineItem({ entry, color, undone, onUndo, onAsk, last }: Prop
           <AppText style={[T.small, styles.when]}>{entry.when}</AppText>
           <View style={styles.link}>
             <AppText style={[T.smallStrong, { color: canUndo ? color : color, opacity: undone ? 0.5 : 1 }]}>
-              {undone ? 'Undone' : canUndo ? copy.undo : copy.details}
+              {undone ? copy.undone : canUndo ? copy.undo : copy.details}
             </AppText>
             {!canUndo && !undone ? (
               <Animated.View style={[styles.chev, chevron]}>

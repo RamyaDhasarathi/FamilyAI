@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   ringTrack: { position: 'absolute', width: RING * 2, height: RING * 2, borderRadius: RING, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   ring: { position: 'absolute', width: RING * 2, height: RING * 2 },
   dot: { position: 'absolute', width: 10, height: 10, borderRadius: 5, shadowOpacity: 1, shadowRadius: 8, elevation: 0 },
-  word: { fontFamily: fonts.semibold, fontSize: 28, color: '#E1E4EB', letterSpacing: -0.4 },
+  word: { fontFamily: fonts.semibold, fontSize: 28, lineHeight: 36, color: '#E1E4EB', letterSpacing: -0.4 },
   msg: { marginTop: 10 },
   track: { width: 180, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: 22, overflow: 'hidden' },
   fill: { height: 3, flexDirection: 'row', overflow: 'hidden' },

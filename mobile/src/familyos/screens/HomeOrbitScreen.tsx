@@ -19,6 +19,7 @@ import { OrbitSceneCanvas } from '../graphics/OrbitScene';
 import { OrbitSceneContext, ensureMorphData, useCreateOrbitScene } from '../graphics/sceneState';
 import { gemHome } from '../graphics/orbitLayout';
 import { useLowPowerProbe } from '../graphics/useLowPowerProbe';
+import { usePerfSampler } from '../graphics/usePerfSampler';
 import type { ScreenProps } from '../navigation/types';
 import { AskBar } from '../components/AskBar';
 import { SummaryButton } from '../components/SummaryButton';
@@ -49,6 +50,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const [singleH, setSingleH] = useState(140);
   useScenarioSync(scene, mood);
+  usePerfSampler(scene);
   useCelebration(scene);
   useLowPowerProbe(scene, (low, avg) => {
     if (__DEV__) console.log(`[perf] Home UI-thread frame avg ${avg.toFixed(1)} ms (${(1000 / avg).toFixed(0)} fps), lowPower=${low}`);
@@ -92,6 +94,8 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
           setDashOpen(open);
         }
         if (dev.cmd.stop) stop();
+        if (dev.cmd.dbg) scene.debugMask.set(Number(dev.cmd.dbg));
+        if (dev.cmd.low) useFamilyOS.getState().setLowPower(dev.cmd.low === '1');
         if (dev.cmd.walk) void start(dev.cmd.walk === 'today' ? undefined : (dev.cmd.walk as AgentId), false);
       }),
     [scene, start, stop]

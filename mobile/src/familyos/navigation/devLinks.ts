@@ -8,6 +8,9 @@
 //   familyos://dev?home=1                     back to Home, sheets closed
 //   familyos://dev?mode=listen|read           summary button mode
 //   familyos://dev?screen=Settings|Family|Login|Loading
+//   familyos://dev?perf=1                     log UI-thread frame stats (300 frames)
+//   familyos://dev?dbg=1|2|4                  profiling: skip shader | satellites | core (bitmask)
+//   familyos://dev?low=1|0                    force low-power graphics on/off
 import { useEffect } from 'react';
 import { Linking } from 'react-native';
 import type { NavigationContainerRef } from '@react-navigation/native';
@@ -47,7 +50,9 @@ export function useDevLinks(nav: React.RefObject<NavigationContainerRef<RootStac
       }
       if (p.sheet === 'chat') st.openChat(p.thread ?? 'home');
       else if (p.sheet === 'today' || p.sheet === 'needs' || p.sheet === 'profile') st.openSheet(p.sheet);
-      if (p.dash || p.walk) st.setDevCommand({ ...(p.dash ? { dash: p.dash } : {}), ...(p.walk ? { walk: p.walk } : {}) });
+      const cmd: Record<string, string> = {};
+      for (const k of ['dash', 'walk', 'perf', 'dbg', 'low']) if (p[k]) cmd[k] = p[k];
+      if (Object.keys(cmd).length) st.setDevCommand(cmd);
     };
     const sub = Linking.addEventListener('url', handle);
     void Linking.getInitialURL().then((u) => {
