@@ -106,9 +106,9 @@ export function drawMorph(canvas: SkCanvas, d: MorphData, s: MorphState) {
   const g = s.colFrom[1] + (s.colTo[1] - s.colFrom[1]) * t;
   const b = s.colFrom[2] + (s.colTo[2] - s.colFrom[2]) * t;
   // Lift towards white so the dots glow.
-  const lr = Math.round(Math.min(1, r * 0.8 + 0.22) * 255);
-  const lg = Math.round(Math.min(1, g * 0.8 + 0.22) * 255);
-  const lb = Math.round(Math.min(1, b * 0.8 + 0.22) * 255);
+  const lr = Math.round(Math.min(1, r * 0.85 + 0.2) * 255);
+  const lg = Math.round(Math.min(1, g * 0.85 + 0.2) * 255);
+  const lb = Math.round(Math.min(1, b * 0.85 + 0.2) * 255);
   const paint = Skia.Paint();
   paint.setStyle(PaintStyle.Stroke);
   paint.setStrokeCap(StrokeCap.Round);
@@ -125,13 +125,13 @@ export function drawMorph(canvas: SkCanvas, d: MorphData, s: MorphState) {
   const buckets = [b0, b1, b2];
   if (!s.lowPower) {
     // Soft glow pass on one bucket.
-    paint.setStrokeWidth(4.2);
-    paint.setColor(Skia.Color(`rgba(${lr},${lg},${lb},${0.1 * s.alpha})`));
+    paint.setStrokeWidth(5.5);
+    paint.setColor(Skia.Color(`rgba(${lr},${lg},${lb},${0.13 * s.alpha})`));
     canvas.drawPoints(PointMode.Points, b0, paint);
   }
-  paint.setStrokeWidth(1.7);
+  paint.setStrokeWidth(2.3);
   for (let k = 0; k < 3; k++) {
-    const tw = 0.55 + 0.45 * Math.sin(9 * s.ph + k * 2.1);
+    const tw = 0.7 + 0.3 * Math.sin(9 * s.ph + k * 2.1);
     paint.setColor(Skia.Color(`rgba(${lr},${lg},${lb},${Math.min(1, tw * s.alpha)})`));
     canvas.drawPoints(PointMode.Points, buckets[k], paint);
   }

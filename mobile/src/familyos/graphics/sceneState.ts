@@ -76,12 +76,15 @@ export function currentPalette(s: OrbitScene): number[] {
   return out;
 }
 
-let morphReady = false;
-/** Sample the icon point clouds once (JS thread), then share with the UI thread. */
+let morphCache: MorphData | null = null;
+/**
+ * Sample the icon point clouds once (JS thread, Skia paths), cache them, and
+ * hand them to this scene's UI-thread value. Every new scene (remount, Fast
+ * Refresh) gets the cached clouds.
+ */
 export function ensureMorphData(s: OrbitScene, n?: number) {
-  if (morphReady) return;
-  morphReady = true;
-  s.morph.value = buildMorphData(n);
+  if (!morphCache) morphCache = buildMorphData(n);
+  if (s.morph.value.n === 0) s.morph.value = morphCache;
 }
 
 export const OrbitSceneContext = createContext<OrbitScene | null>(null);

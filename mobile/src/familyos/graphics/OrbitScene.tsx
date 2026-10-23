@@ -3,7 +3,7 @@
 // Nothing here re-renders per frame; everything is derived on the UI thread.
 import { memo, useEffect } from 'react';
 import { AppState, StyleSheet } from 'react-native';
-import { Blur, Canvas, Fill, Group, Paint, Picture, Shader, createPicture } from '@shopify/react-native-skia';
+import { Blur, Canvas, Fill, Group, Paint, PaintStyle, Picture, Shader, Skia, createPicture } from '@shopify/react-native-skia';
 import { useDerivedValue, useFrameCallback, useReducedMotion } from 'react-native-reanimated';
 import { AGENT_IDS, colors, hexToRgb } from '../theme/tokens';
 import { ambientEffect } from './ambientShader';
@@ -73,8 +73,9 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       tint: [pal[13] * intro, pal[14] * intro, pal[15] * intro],
       corner: [pal[16] * intro, pal[17] * intro, pal[18] * intro],
       halo: [pal[10], pal[11], pal[12]],
-      haloAmt: (pulse + listen * 0.9 + scene.burst.value) * intro,
-      dustAmt: (1.1 + scene.burst.value * 1.5) * intro,
+      // While particles form an icon, the halo and dust step back so the icon reads.
+      haloAmt: (pulse * (1 - 0.75 * scene.morphAlpha.value) + listen * 0.9 + scene.burst.value) * intro,
+      dustAmt: (1.1 * (1 - 0.6 * scene.morphAlpha.value) + scene.burst.value * 1.5) * intro,
       dustCol: dc,
       starAmt: intro,
       sats,
@@ -120,6 +121,16 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
             sy: 1,
             lowPower: low,
           });
+        }
+        // Thin ring around the satellite being read in a walkthrough.
+        if (hl >= 0) {
+          const p = satellitePos(frame, hl, still ? 0 : ph);
+          const ring = Skia.Paint();
+          ring.setStyle(PaintStyle.Stroke);
+          ring.setAntiAlias(true);
+          ring.setStrokeWidth(1.2);
+          ring.setColor(Skia.Color(`rgba(255,255,255,${0.75 * satFade})`));
+          canvas.drawCircle(p.x, p.y, sr * 1.55, ring);
         }
       }
 
