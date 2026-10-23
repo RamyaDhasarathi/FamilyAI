@@ -173,6 +173,8 @@ Branch `feat/core-gestures-and-family`, created from `feat/stone-design-v2` (the
 ## Phases
 
 - [x] Phase 0 — read the code, libraries, this section
-- [ ] Part A — jelly tap and finger rotation (`feat(core): …`)
-- [ ] Part B — data model, storage, service · hub + profile · add/edit + wizard · remove + undo
-- [ ] Verification on the Xiaomi and the iOS simulator + report section
+- [x] Part A — jelly tap and finger rotation (`feat(core): jelly tap and finger rotation for the crystal core`; crash
+  fix `fix(core): tapping the crystal crashed the UI thread`)
+- [x] Part B — data model, storage, service · hub + profile · add/edit + wizard · remove + undo (four `feat(family): …`
+  commits)
+- [x] Verification on the Xiaomi and the iOS simulator + report section (`MOBILE_UI_REPORT.md` §9)

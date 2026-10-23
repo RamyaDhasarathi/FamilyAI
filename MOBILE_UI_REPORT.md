@@ -175,3 +175,98 @@ flights; v1 had 16). Touch flows re-checked: satellite tap and long-press, swipe
 iOS simulator every screen with a stone was checked: four moods, walkthrough, sheets, Dashboard, agent screen and
 Loading. Known dev-only quirk, the same with v1: after a full JavaScript reload on the iOS simulator the Skia canvas
 stays black until the app is relaunched. A normal launch renders correctly.
+
+## 9. Task 2 — interactive core and family members (`AGENT_CORE_AND_FAMILY.md`)
+
+Branch `feat/core-gestures-and-family` (from `feat/stone-design-v2`). Commits: `Task 2 Phase 0`,
+`feat(core): jelly tap and finger rotation for the crystal core`, `fix(core): tapping the crystal crashed the UI
+thread`, then `feat(family): data model, storage and service`, `… family hub and member profile`, `… add/edit sheets
+and details wizard`, `… remove flow with undo`. The last three are grouped by feature from one working session (the hub
+hosts the sheets and the remove dialog), so only the branch head is the tested state.
+
+### What was built
+
+| Area | Where | Notes |
+|---|---|---|
+| Crystal orientation | `graphics/coreMotion.ts` | Quaternion orientation. Idle spin about the tilted axis, trackball drag (the facet under the finger follows it), flick momentum with friction, settle wobble, then a 1.2 s blend back into the idle spin |
+| Jelly tap | `graphics/coreInput.ts`, `crystalRenderV2.ts` | Ray-sphere hit gives the tap point on the gem. A damped dent plus a travelling ripple (up to 3 at once), a volume-preserving squash along the tap, a facet flash, a halo pulse and a dust puff. Reduce Motion: a gentle 0.96 pulse only |
+| Touch handling | `screens/CoreGestureLayer.tsx` | Gesture handlers only queue input; the frame callback applies it once per frame, so the crystal is drawn once however many touch events arrive. Satellites shift 2–3 px with the drag |
+| Family data | `services/interfaces.ts`, `family/model.ts`, `mocks/familyService.ts`, `mocks/familySeed.ts`, `store/useFamily.ts` | `FamilyService` contract. Members in AsyncStorage (`familyos.family.v1`); ID, health and banking details in SecureStore as `member_<id>_<section>` (this device only, never logged). Soft delete, 6 s Undo, then purge |
+| Region formats | `family/region.ts`, `family/fields.ts`, `family/summary.ts` | US and India fields, validators (ABA routing checksum, Aadhaar, PAN, IFSC, UPI, ZIP / PIN), as-you-type formatting, masking when a field isn't focused, masked one-line summaries |
+| Family hub | `screens/family/FamilyHubScreen.tsx`, `FamilyOrbit.tsx`, `MemberCard.tsx` | Orbit header (a calm mini crystal, one dot per member in their stage colour, tap = jelly), completion summary, cards (owner first, then oldest) with amber tags per section to update, dim "not started", green "all up to date". Swipe left: Edit / Remove (Edit only for the owner). Long-press: menu |
+| Member profile | `screens/family/MemberProfileScreen.tsx` | Stage avatar with stage-tinted dust and jelly tap, completion ring, one row per section with masked summary and status, ⋯ menu, "Remove from family" |
+| Add / Edit sheet | `screens/family/MemberBasicsSheet.tsx`, `components/form/*` | Live avatar preview for the age entered (babies read "Under 1"), relationship chips, date of birth, photo (edit), discard confirmation. "Add and fill details" opens the wizard; "Add now, finish later" leaves every section not started |
+| Details wizard | `screens/family/MemberWizardScreen.tsx`, `WizardFields.tsx`, `WizardReview.tsx` | Six tappable progress segments, slide between steps, section glow cross-fade, sensitive-data note, Skip / Save and continue, Review. Child / teen / adult variants (allowance and "Paid from" for under-18s). The footer and the focused field stay above the keyboard |
+| Remove | `screens/family/RemoveDialog.tsx`, `Dissolve.tsx` | From the card swipe, the long-press menu, the profile ⋯ menu or link. Lists children whose allowance the member pays, with another adult or "Decide later". The card dissolves into particles and "Removed · Undo" shows at once |
+| Entry points | `ProfileMenu.tsx`, `SettingsScreen.tsx`, `navigation/devLinks.ts` | Profile menu: "Add family member" and a needs-update count chip on "Family members". Settings (dev builds): Reset demo family |
+
+### New libraries (all run in Expo Go)
+
+| Package | Version | Used for |
+|---|---|---|
+| @react-native-async-storage/async-storage | 2.2.0 | The member list |
+| expo-secure-store | 58.0.2 | ID, health and banking details |
+| @react-native-community/datetimepicker | 9.2.1 | Dates (system dialog on Android, inline spinner on iOS) |
+| expo-image-picker | 58.0.10 | Member photo (library or camera) |
+| expo-document-picker | 58.0.4 | Document attachments in the IDs section |
+
+### Gestures on the crystal
+
+| Gesture | Result |
+|---|---|
+| Tap | Jelly ripple from the touch point (was: start the summary walkthrough) |
+| Drag | Rotates the crystal under the finger, with a slight stretch along the drag |
+| Flick | Keeps spinning and slows down, with a light haptic tick per turn (at most 6) |
+| **Long-press** | **Starts the summary walkthrough** (moved here from tap) |
+| Tap during a walkthrough | Stops it |
+| Swipe up from below the crystal | Opens the Dashboard, as before. A drag that starts on the crystal never opens it |
+| Screen reader | "Wobble" and "Play summary" actions on the crystal |
+
+### Region, reset and backend
+
+- **Region:** `REGION` in `mobile/src/familyos/mocks/data.ts` follows `CURRENCY`. `'$'` gives US fields and formats;
+  set `CURRENCY = '₹'` for India (Aadhaar, PAN, IFSC, UPI, PIN code, +91, ₹ amounts).
+- **Reset the demo family:** Settings → Reset demo family (under Demo scenario, dev builds only), or
+  `familyos://dev?resetFamily=1`. It restores the five sample members and deletes everything saved on the device,
+  including the SecureStore keys.
+- **Backend:** implement `FamilyService` (`services/interfaces.ts`) and change the last line of
+  `mocks/familyService.ts`. The store and screens only call the service. Suggested mapping: `listMembers` →
+  `GET /v1/household/members`, `createMember` → `POST`, `updateBasics` → `PATCH /members/{id}`, `updateSection` →
+  `PUT /members/{id}/sections/{section}`, `deleteMember` / `restoreMember` → soft delete and undelete, `purgeMember` →
+  `DELETE`. Sensitive sections should then be stored server-side encrypted, and the SecureStore copy dropped.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| Scope | `git diff feat/stone-design-v2..HEAD` outside `mobile/` touches only `MOBILE_UI_PLAN.md` (and this report) |
+| Web untouched | `design-reference/web-check.sh` with ruff 0.17.2: **identical to `web-baseline.txt`** |
+| Type-check / lint | `npx tsc --noEmit` clean · `npx eslint src/familyos` clean · `npx expo-doctor` 20/20 |
+| Android, by touch (Xiaomi 11 Lite NE) | Crystal: tap, 10 rapid taps, drag, flick, long-press, tap to stop, swipe-up from below. Family: add with both buttons, validation and scroll-to-error, wizard steps and masking, Review, Edit with a stage change (toast), remove from all four entry points, the dependants dialog with reassign and "Decide later", Undo, owner can't be removed, Profile-menu chip, Reset demo family, data kept after an app restart |
+| Edge cases (§5.4) | 55-character name (card truncates, profile wraps), member born today (Stage 1, "Under 1"), 16 → 18 years (stage unchanged; banking switches to the adult variant and is marked "Needs update"), removing the only adult paying an allowance, rotating the crystal while a sheet opens, 10 rapid taps |
+| iOS simulator (iPhone 18 Pro) | By dev links: hub, profile, wizard steps and Review, Add sheet, Profile menu with chip. Touch could not be injected (no `idb` here); the gestures share the Android code |
+
+**Frame rate, release build on the Xiaomi.** These count frames actually shown on screen: SurfaceFlinger present times
+for the app window, over about 2 s each.
+
+| Screen / action | Frames shown | Longest frame |
+|---|---|---|
+| Home idle · dragging the crystal · 10 rapid taps | 60 fps · 60 · 60 | 17 ms |
+| Family hub idle · scrolling · fast flings | 60 fps · 60 · 60 | 17 ms |
+| Member profile · wizard step slides | 60 fps · 60 | 17 ms |
+
+**How to read the earlier frame-rate tables.** The tables in §6 and §8 come from the in-app sampler
+(`familyos://dev?perf=1`). That sampler times the UI-thread frame callback. In the dev build it reads 58–60 fps, but
+the dev build actually shows only about 28–39 frames a second, because of debug JavaScript and dev tooling.
+Measure smoothness on a release build. On this phone the release build shows 60 fps on every screen above.
+
+**Bugs found on the device and fixed:**
+- Every tap on the Home crystal crashed the UI thread, because a worklet called another one that was declared later
+  in the file.
+- On Android, a card could stay invisible when the list reflowed during its entrance.
+- Undo appeared only after the delete round-trip.
+- Close marked an untouched "needs update" section as complete.
+- Jumping between wizard steps dropped edits.
+- The keyboard covered the wizard's footer and fields.
+- Reanimated 4's spring default of mass 4 made the step slide and dialogs wobble.
+- New members showed "All details up to date".
