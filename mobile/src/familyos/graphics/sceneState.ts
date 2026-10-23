@@ -5,6 +5,7 @@ import { createContext, useContext, useMemo } from 'react';
 import { makeMutable, type SharedValue } from 'react-native-reanimated';
 import { paletteOf, PALETTE_LEN, type Scenario } from '../theme/stateThemes';
 import { buildMorphData, type MorphData } from './ParticleMorph';
+import { START_ORIENT } from './coreMotion';
 
 export interface OrbitScene {
   /** Seconds of animation time (stops while paused). */
@@ -39,7 +40,49 @@ export interface OrbitScene {
   debugMask: SharedValue<number>;
   /** Dev-only profiling: ms spent per section [satRecord, satDraw, core, morph, picture, uniforms]. */
   prof: SharedValue<number[]>;
+  /** Dev-only profiling: worst single-call ms per section, and call counts (indices 6..11). */
+  profMax: SharedValue<number[]>;
   morph: SharedValue<MorphData>;
+
+  // Interactive core (AGENT_CORE_AND_FAMILY.md §3), see coreMotion.ts.
+  /** Crystal orientation, unit quaternion [w, x, y, z] (model → view). */
+  orient: SharedValue<number[]>;
+  /** Momentum after a flick: view-space angular velocity [x, y, z] in rad/s. */
+  spin: SharedValue<number[]>;
+  /** 0..1: how much of the idle rotation is applied (blends back in after a flick). */
+  idleBlend: SharedValue<number>;
+  /** A finger is rotating the crystal. */
+  dragging: SharedValue<boolean>;
+  /** Up to 3 jelly ripples: [modelX, modelY, modelZ, startClock] each. */
+  ripples: SharedValue<number[]>;
+  /** Jelly squash amount s (spring → 0) and its view-space axis. */
+  jelly: SharedValue<number>;
+  jellyDir: SharedValue<number[]>;
+  /** Stretch while dragging (0..0.06) and its screen direction. */
+  stretch: SharedValue<number>;
+  stretchDir: SharedValue<number[]>;
+  /** Dust pushed outward after a tap: px (spring → 0) and screen direction. */
+  dustPush: SharedValue<number>;
+  dustPushDir: SharedValue<number[]>;
+  /** Satellites' parallax shift while dragging, px [x, y]. */
+  parallax: SharedValue<number[]>;
+  /** Short halo/edge pulse after a tap, 0..1. */
+  coreFlash: SharedValue<number>;
+  /** Spin haptics: [angle since last tick, ticks this spin]. */
+  spinTicks: SharedValue<number[]>;
+  /** A flick is slowing down; when it reaches idle speed the crystal wobbles once. */
+  settling: SharedValue<boolean>;
+  /** Uniform scale pulse (Reduce Motion tap feedback), 1 at rest. */
+  corePulse: SharedValue<number>;
+  /**
+   * Touch input waiting for the next frame: [dx, dy, vx, vy, tx, ty, moved].
+   * Gesture handlers only write here (nothing draws from it); the frame
+   * callback applies it once per frame. Writing the drawn values straight
+   * from touch events made the crystal redraw twice in some frames.
+   */
+  dragInput: SharedValue<number[]>;
+  /** Taps waiting for the next frame: [canvasX, canvasY] pairs. */
+  tapInput: SharedValue<number[]>;
 }
 
 export function createOrbitScene(initial: Scenario): OrbitScene {
@@ -66,7 +109,26 @@ export function createOrbitScene(initial: Scenario): OrbitScene {
     lowPower: makeMutable(false),
     debugMask: makeMutable(0),
     prof: makeMutable([0, 0, 0, 0, 0, 0]),
+    profMax: makeMutable([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
     morph: makeMutable<MorphData>({ n: 0, shapes: [], delay: [], sway: [], phase: [], sinP: [], cosP: [] }),
+    orient: makeMutable(START_ORIENT.slice()),
+    spin: makeMutable([0, 0, 0]),
+    idleBlend: makeMutable(1),
+    dragging: makeMutable(false),
+    ripples: makeMutable<number[]>([]),
+    jelly: makeMutable(0),
+    jellyDir: makeMutable([0, 0, 1]),
+    stretch: makeMutable(0),
+    stretchDir: makeMutable([1, 0]),
+    dustPush: makeMutable(0),
+    dustPushDir: makeMutable([1, 0]),
+    parallax: makeMutable([0, 0]),
+    coreFlash: makeMutable(0),
+    spinTicks: makeMutable([0, 0]),
+    settling: makeMutable(false),
+    corePulse: makeMutable(1),
+    dragInput: makeMutable([0, 0, 0, 0, 0, 0, 0]),
+    tapInput: makeMutable<number[]>([]),
   };
 }
 
@@ -79,6 +141,12 @@ export function profAdd(s: OrbitScene, k: number, t0: number) {
   s.prof.modify((a) => {
     'worklet';
     a[k] += dt;
+    return a;
+  }, false);
+  s.profMax.modify((a) => {
+    'worklet';
+    if (dt > a[k]) a[k] = dt;
+    a[6 + k] += 1;
     return a;
   }, false);
 }

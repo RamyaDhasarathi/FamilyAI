@@ -58,6 +58,8 @@ function MiniGemView({ size, scenario = 'calm', agentColor }: Props) {
     satAmt: 0,
     lowPower: 1,
     clearBg: 1,
+    pushDir: [1, 0],
+    pushAmt: 0,
   }));
   const picture = useDerivedValue(() =>
     createPicture((canvas) => {

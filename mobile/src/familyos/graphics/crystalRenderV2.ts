@@ -26,9 +26,47 @@ import {
   VertexMode,
   type SkCanvas,
   type SkColor,
+  type SkPoint,
 } from '@shopify/react-native-skia';
 import type { CrystalMesh } from './crystalGeometry';
 import type { CrystalParams } from './crystalRender';
+
+/** v2 extras for the interactive core (AGENT_CORE_AND_FAMILY.md §3). v1 ignores them. */
+export interface CrystalParamsV2 extends CrystalParams {
+  /** Orientation as a row-major 3×3 matrix, view = rot · model. Overrides rotY/tiltX. */
+  rot?: number[];
+  /** Jelly ripples, [modelX, modelY, modelZ, ageSeconds] each (model-space unit touch direction). */
+  ripples?: number[];
+  /** Squash [axisX, axisY, axisZ, s] in view space: shrink along the axis by s, grow across it by s/2. */
+  squash?: number[];
+  /** Stretch [dirX, dirY, m] in screen space (y down): grow along the drag by m, shrink across by m/2. */
+  stretch?: number[];
+  /** 0..1 extra edge brightness after a tap. */
+  flash?: number;
+}
+
+// Jelly ripple (§3.3): d = −A·e^(−θ²/σ²)·e^(−λt)·cos(ωt) + B·e^(−λt)·sin(ωt − kθ),
+// θ = angle between a corner's direction and the touch direction. The first
+// term is the dent under the finger, the second a ripple running outwards.
+const RIP_A = 0.14;
+const RIP_B = 0.035;
+const RIP_SIGMA2 = 0.7 * 0.7;
+const RIP_LAMBDA = 4.5;
+const RIP_OMEGA = 22;
+const RIP_K = 3;
+/** A ripple is invisible after this many seconds (e^(−4.5·1.4) ≈ 0.2 %). */
+export const RIPPLE_LIFE = 1.4;
+
+/** Volume-preserving scale along unit axis a: ×(1 − s) along, ×(1 + s/2) across. */
+function axisScale(x: number, y: number, z: number, ax: number, ay: number, az: number, s: number, out: number[]) {
+  'worklet';
+  const d = x * ax + y * ay + z * az;
+  const k = 1 + s / 2;
+  const along = d * (1 - s);
+  out[0] = (x - d * ax) * k + ax * along;
+  out[1] = (y - d * ay) * k + ay * along;
+  out[2] = (z - d * az) * k + az * along;
+}
 
 const TAU = Math.PI * 2;
 // Lights in view space (y up, +z towards the viewer), as in the renderer.
@@ -68,11 +106,18 @@ half4 main(float2 p) {
   return half4(fill + edge * line);
 }`)!;
 
-const BARY = [
-  { x: 0, y: 0 },
-  { x: 1, y: 0 },
-  { x: 0, y: 1 },
-];
+/**
+ * The three barycentric corners as native Skia points, created once per UI
+ * runtime. Native points cross into C++ without property lookups; plain
+ * {x, y} objects cost two string-keyed lookups each, which dominated the
+ * frame (measured on a Snapdragon 778G).
+ */
+function bary(): SkPoint[] {
+  'worklet';
+  const g = globalThis as unknown as { __fosBary?: SkPoint[] };
+  if (!g.__fosBary) g.__fosBary = [Skia.Point(0, 0), Skia.Point(1, 0), Skia.Point(0, 1)];
+  return g.__fosBary;
+}
 
 function clamp01(x: number) {
   'worklet';
@@ -141,7 +186,7 @@ function twinkle(phase: number, k: number, seed: number) {
   return s * s * s * s;
 }
 
-export function drawCrystalV2(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams) {
+export function drawCrystalV2(canvas: SkCanvas, m: CrystalMesh, p: CrystalParamsV2) {
   'worklet';
   if (p.alpha <= 0.01) return;
   const { v, f, fr, fc, nv, nf } = m;
@@ -161,15 +206,61 @@ export function drawCrystalV2(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams
   const py: number[] = new Array(nv);
   // One point object per corner, shared by every face that uses it (fewer
   // allocations on the UI thread than three new objects per face).
+  // Plain objects: creating native points per frame costs more than it saves.
   const pt: { x: number; y: number }[] = new Array(nv);
+  const BARY = bary();
+  const M = p.rot;
+  const rip = !p.lowPower && p.ripples && p.ripples.length > 0 ? p.ripples : null;
+  const sq = p.squash && Math.abs(p.squash[3]) > 1e-4 ? p.squash : null;
+  // Stretch axis in view space (screen y points down, view y up).
+  const st = p.stretch && p.stretch[2] > 1e-4 ? p.stretch : null;
+  const tmp = [0, 0, 0];
   for (let i = 0; i < nv; i++) {
-    const x = v[i * 3];
-    const y = v[i * 3 + 1];
-    const z = v[i * 3 + 2];
-    const x1 = x * cY + z * sY;
-    const z1 = -x * sY + z * cY;
-    const y2 = y * cX - z1 * sX;
-    const z2 = y * sX + z1 * cX;
+    let x = v[i * 3];
+    let y = v[i * 3 + 1];
+    let z = v[i * 3 + 2];
+    if (rip) {
+      // Jelly: move the corner along its (near-radial) normal.
+      const len = Math.hypot(x, y, z) || 1;
+      let disp = 0;
+      for (let r = 0; r < rip.length; r += 4) {
+        const t = rip[r + 3];
+        if (t < 0 || t > RIPPLE_LIFE) continue;
+        const c = (x * rip[r] + y * rip[r + 1] + z * rip[r + 2]) / len;
+        const th = Math.acos(c < -1 ? -1 : c > 1 ? 1 : c);
+        const e = Math.exp(-RIP_LAMBDA * t);
+        disp += -RIP_A * Math.exp(-(th * th) / RIP_SIGMA2) * e * Math.cos(RIP_OMEGA * t) + RIP_B * e * Math.sin(RIP_OMEGA * t - RIP_K * th);
+      }
+      const k = 1 + disp;
+      x *= k;
+      y *= k;
+      z *= k;
+    }
+    let x1: number;
+    let y2: number;
+    let z2: number;
+    if (M) {
+      x1 = M[0] * x + M[1] * y + M[2] * z;
+      y2 = M[3] * x + M[4] * y + M[5] * z;
+      z2 = M[6] * x + M[7] * y + M[8] * z;
+    } else {
+      x1 = x * cY + z * sY;
+      const z1 = -x * sY + z * cY;
+      y2 = y * cX - z1 * sX;
+      z2 = y * sX + z1 * cX;
+    }
+    if (sq) {
+      axisScale(x1, y2, z2, sq[0], sq[1], sq[2], sq[3], tmp);
+      x1 = tmp[0];
+      y2 = tmp[1];
+      z2 = tmp[2];
+    }
+    if (st) {
+      axisScale(x1, y2, z2, st[0], -st[1], 0, -st[2], tmp);
+      x1 = tmp[0];
+      y2 = tmp[1];
+      z2 = tmp[2];
+    }
     rx[i] = x1;
     ry[i] = y2;
     rz[i] = z2;
@@ -277,9 +368,23 @@ export function drawCrystalV2(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams
       const fres = Math.pow(1 - nvw, 1.5);
       const ml = Math.hypot(mx, my, mz) || 1;
       const pool = poolAt(mx / ml, my / ml);
+      // A soft light runs with the ripple front across the facets.
+      let frontGlow = 0;
+      if (rip) {
+        for (let r = 0; r < rip.length; r += 4) {
+          const t = rip[r + 3];
+          if (t < 0 || t > RIPPLE_LIFE) continue;
+          const cl = Math.hypot(fc[fi * 3], fc[fi * 3 + 1], fc[fi * 3 + 2]) || 1;
+          const c = (fc[fi * 3] * rip[r] + fc[fi * 3 + 1] * rip[r + 1] + fc[fi * 3 + 2] * rip[r + 2]) / cl;
+          const th = Math.acos(c < -1 ? -1 : c > 1 ? 1 : c);
+          const crest = (RIP_OMEGA * t - Math.PI / 2) / RIP_K;
+          const dd = (th - crest) / 0.28;
+          frontGlow += 0.45 * Math.exp(-RIP_LAMBDA * t) * Math.exp(-dd * dd);
+        }
+      }
       if (isFront) {
         fl[fi] = 0.08 + 1.0 * fres + (0.2 + 1.75 * pool) * (0.4 + 0.6 * f2) * (0.5 + 0.5 * lam) + 0.1 * fil;
-        fw[fi] = sp * 0.9 + 0.05 * fres * (0.4 + lam);
+        fw[fi] = sp * 0.9 + 0.05 * fres * (0.4 + lam) + frontGlow;
         // Clear where the glass faces you near the top; denser where light pools.
         fa[fi] = clamp01(0.13 + 0.5 * fres + 0.8 * pool * (0.45 + 0.55 * f2));
       } else {
@@ -300,27 +405,14 @@ export function drawCrystalV2(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams
   const A = p.alpha * edgeFade;
   const ag = p.agent;
 
-  // 3. Behind the stone: satellites get a soft halo in their own colour.
-  if (isSat && intact) {
-    const halo = Skia.Paint();
-    halo.setShader(
-      Skia.Shader.MakeRadialGradient(
-        { x: p.cx, y: p.cy },
-        p.R * 1.9,
-        [Skia.Color([ag![0], ag![1], ag![2], (0.2 + 0.18 * p.glow) * p.alpha]), Skia.Color([ag![0], ag![1], ag![2], 0])],
-        null,
-        TileMode.Clamp
-      )
-    );
-    canvas.drawCircle(p.cx, p.cy, p.R * 1.9, halo);
-  }
+  // 3. (Satellite halos come from the ambient shader's satellite glow.)
 
   // 4. The far wall (intact only), seen through the clear front facets.
   const backPos: { x: number; y: number }[] = [];
-  const backTex: { x: number; y: number }[] = [];
+  const backTex: SkPoint[] = [];
   let backPath = '';
   const pos: { x: number; y: number }[] = [];
-  const tex: { x: number; y: number }[] = [];
+  const tex: SkPoint[] = [];
   const cols: number[][] = [];
   for (let k = 0; k < order.length; k++) {
     const fi = order[k];
@@ -450,7 +542,7 @@ export function drawCrystalV2(canvas: SkCanvas, m: CrystalMesh, p: CrystalParams
     let er = 1;
     let eg = 1;
     let eb = 1;
-    let ea = 0.42 * A;
+    let ea = 0.42 * A * (1 + 0.5 * (p.flash ?? 0));
     let wpx = 0.32;
     let gpx = 2.2;
     let gk = 0.1;

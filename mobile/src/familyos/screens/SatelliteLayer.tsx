@@ -37,7 +37,8 @@ function Satellite({ i, scene, frame, badge, onTap, onLongPress }: { i: number; 
     const hl = scene.satHighlight.value;
     return {
       opacity: (1 - scene.dashT.value) * pop * (hl >= 0 && hl !== i ? 0.6 : 1),
-      transform: [{ translateX: p.x - HIT / 2 }, { translateY: p.y - HIT / 2 }],
+      // Follows the canvas satellites, including their drag parallax (§3.4.6).
+      transform: [{ translateX: p.x + scene.parallax.value[0] - HIT / 2 }, { translateY: p.y + scene.parallax.value[1] - HIT / 2 }],
     };
   });
   const label = `${agentNames[id]} agent${badge ? `, ${badge.n} ${badge.n === 1 ? 'item needs' : 'items need'} you` : ''}`;

@@ -16,13 +16,18 @@ import {
   createPicture,
   type SkPicture,
 } from '@shopify/react-native-skia';
-import { useDerivedValue, useFrameCallback, useReducedMotion, useSharedValue } from 'react-native-reanimated';
+import { useDerivedValue, useFrameCallback, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { scheduleOnRN } from 'react-native-worklets';
 import { AGENT_IDS, colors, hexToRgb } from '../theme/tokens';
 import { ambientEffect } from './ambientShader';
 import { coreMeshLow } from './crystalGeometry';
 import { drawStone, stoneCoreMesh, stoneSatelliteMeshes } from './stoneStyle';
 import { drawBurst, drawMorphBucket, drawMorphRing, morphInFlight, type MorphState } from './ParticleMorph';
 import { currentPalette, profAdd, type OrbitScene } from './sceneState';
+import { FRICTION, FRICTION_REDUCED, IDLE_AXIS, IDLE_SPEED, JELLY_SPRING, qRotateView, qToMat } from './coreMotion';
+import { RIPPLE_LIFE } from './crystalRenderV2';
+import { applyCoreInput } from './coreInput';
 import { gemAt, loopPhase, satellitePos, satelliteRadius, type Frame } from './orbitLayout';
 
 const AGENT_RGB = AGENT_IDS.map((id) => hexToRgb(colors.agents[id]));
@@ -34,6 +39,73 @@ const SAT_SPIN = [3, -4, 4, -3, 4];
  * 12 Hz. At ≤ 20°/s that is a ≤ 1.5 px step at the rim, which reads as smooth.
  */
 const SATS_PER_FRAME = 1;
+/** A soft selection tick every half turn of a fast spin, at most 6 per spin (§3.4.7). */
+const TICK_SPEED = 2 * Math.PI;
+const MAX_TICKS = 6;
+const spinTick = () => {
+  void Haptics.selectionAsync();
+};
+
+/**
+ * Integrate the crystal's orientation for one frame (§3.4): flick momentum
+ * with friction, then the idle spin blended back in once the crystal is slower
+ * than idle. Runs in the frame callback.
+ */
+function stepCore(scene: OrbitScene, dt: number, reduced: boolean) {
+  'worklet';
+  let q = scene.orient.get();
+  const dragging = scene.dragging.get();
+  const w = scene.spin.get();
+  const wl = Math.hypot(w[0], w[1], w[2]);
+  if (!dragging && wl > 1e-3) {
+    q = qRotateView(q, w[0], w[1], w[2], wl * dt);
+    const k = Math.exp(-(reduced ? FRICTION_REDUCED : FRICTION) * dt);
+    scene.spin.set(wl * k < 1e-3 ? [0, 0, 0] : [w[0] * k, w[1] * k, w[2] * k]);
+    // Haptic ticks on fast spins.
+    if (wl > TICK_SPEED) {
+      const tk = scene.spinTicks.get();
+      const acc = tk[0] + wl * dt;
+      if (acc >= Math.PI && tk[1] < MAX_TICKS) {
+        scheduleOnRN(spinTick);
+        scene.spinTicks.set([acc - Math.PI, tk[1] + 1]);
+      } else {
+        scene.spinTicks.set([acc, tk[1]]);
+      }
+    }
+  }
+  // Idle rotation: off while dragging or spinning faster than idle, then
+  // blended back in over 1.2 s, continuing from the current orientation.
+  if (dragging || wl >= IDLE_SPEED) {
+    scene.idleBlend.set(0);
+  } else {
+    if (scene.settling.get()) {
+      // One small wobble as the flick settles, across the spin axis.
+      scene.settling.set(false);
+      if (!reduced && wl > 1e-3) {
+        const ax = w[1] / wl;
+        const ay = -w[0] / wl;
+        scene.jellyDir.set([ax, ay, 0]);
+        scene.jelly.set(0.04);
+        scene.jelly.set(withSpring(0, JELLY_SPRING));
+      }
+    }
+    scene.idleBlend.set(Math.min(1, scene.idleBlend.get() + dt / 1.2));
+  }
+  // Satellites' drag parallax eases back once the finger lifts.
+  if (!dragging) {
+    const par = scene.parallax.get();
+    if (par[0] !== 0 || par[1] !== 0) {
+      const k = Math.exp(-10 * dt);
+      scene.parallax.set(Math.abs(par[0]) + Math.abs(par[1]) < 0.05 ? [0, 0] : [par[0] * k, par[1] * k]);
+    }
+  }
+  const idle = reduced ? 0 : IDLE_SPEED * scene.idleBlend.get();
+  if (idle > 0) q = qRotateView(q, IDLE_AXIS[0], IDLE_AXIS[1], IDLE_AXIS[2], idle * dt);
+  scene.orient.set(q);
+  // Forget ripples that have died out.
+  const rp = scene.ripples.get();
+  if (rp.length > 0 && scene.clock.get() - rp[3] > RIPPLE_LIFE) scene.ripples.set(rp.slice(4));
+}
 
 function morphStateOf(scene: OrbitScene, frame: Frame, ph: number): MorphState {
   'worklet';
@@ -96,7 +168,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
   // every frame: building crystals is UI-thread JS, and the five small ones
   // cost more than the big gem (measured on a Snapdragon 778G: 43 → 60 fps).
   const satPics = useSharedValue<(SkPicture | null)[]>([null, null, null, null, null]);
-  const satState = useSharedValue({ hl: -2, low: false, next: 0 });
+  const satState = useSharedValue({ hl: -2, low: false, next: 0, skip: 0 });
   // Particle-morph buckets, cached the same way (see ParticleMorph.ts).
   const morphPics = useSharedValue<{ key: string; next: number; pics: (SkPicture | null)[] }>({
     key: '',
@@ -106,6 +178,8 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
   const cb = useFrameCallback((info) => {
     const dt = info.timeSincePreviousFrame ?? 16;
     scene.clock.set(scene.clock.get() + Math.min(dt, 50) / 1000);
+    applyCoreInput(scene, frame, reduced);
+    stepCore(scene, Math.min(dt, 50) / 1000, reduced);
 
     const ms = morphStateOf(scene, frame, loopPhase(scene.clock.get()));
     if (ms.alpha <= 0.01) {
@@ -129,6 +203,16 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       profAdd(scene, 3, m0);
     }
     if (scene.dashT.get() >= 0.999 || (scene.debugMask.get() & 2) !== 0) return;
+    // While the crystal is being touched (drag, spin, jelly), refresh the
+    // satellites on alternate frames to give the core the frame budget.
+    const sw = scene.spin.get();
+    const busy =
+      scene.dragging.get() || scene.ripples.get().length > 0 || Math.abs(scene.jelly.get()) > 0.002 || Math.hypot(sw[0], sw[1], sw[2]) > IDLE_SPEED;
+    const fc = satState.get();
+    if (busy && (fc.skip ?? 0) === 0) {
+      satState.set({ ...fc, skip: 1 });
+      return;
+    }
     const ph = loopPhase(scene.clock.get());
     const hl = scene.satHighlight.get();
     const low = scene.lowPower.get();
@@ -147,7 +231,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       return pics;
     });
     profAdd(scene, 0, t0);
-    satState.set({ hl, low, next: (st.next + SATS_PER_FRAME) % 5 });
+    satState.set({ hl, low, next: (st.next + SATS_PER_FRAME) % 5, skip: 0 });
   }, false);
 
   useEffect(() => {
@@ -172,11 +256,12 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
     const listen = scene.listen.value;
     const satFade = (1 - t) * intro;
     const hl = scene.satHighlight.value;
+    const par = scene.parallax.value;
     const sats: number[] = [];
     const satCols: number[] = [];
     for (let i = 0; i < 5; i++) {
       const p = satellitePos(frame, i, ph);
-      sats.push(p.x, p.y);
+      sats.push(p.x + par[0], p.y + par[1]);
       const dim = hl >= 0 && hl !== i ? 0.6 : 1;
       satCols.push(AGENT_RGB[i][0] * dim, AGENT_RGB[i][1] * dim, AGENT_RGB[i][2] * dim);
     }
@@ -192,7 +277,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       corner: [pal[16] * intro, pal[17] * intro, pal[18] * intro],
       halo: [pal[10], pal[11], pal[12]],
       // While particles form an icon, the halo and dust step back so the icon reads.
-      haloAmt: (pulse * (1 - 0.75 * scene.morphAlpha.value) + listen * 0.9 + scene.burst.value) * intro,
+      haloAmt: (pulse * (1 - 0.75 * scene.morphAlpha.value) + listen * 0.9 + scene.burst.value + 0.6 * scene.coreFlash.value) * intro,
       dustAmt: (1.1 * (1 - 0.6 * scene.morphAlpha.value) + scene.burst.value * 1.5) * intro,
       dustCol: dc,
       starAmt: intro,
@@ -202,6 +287,8 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       satAmt: satFade,
       lowPower: scene.lowPower.value ? 1 : 0,
       clearBg: 0,
+      pushDir: scene.dustPushDir.value,
+      pushAmt: scene.dustPush.value * (1 - t),
       // Profiling: shrink the shader to nothing.
       ...((scene.debugMask.value & 1) !== 0 ? { res: [1, 1] } : {}),
     };
@@ -225,6 +312,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
         const sr = satelliteRadius(frame);
         const hl = scene.satHighlight.value;
         const pics = satPics.value;
+        const par = scene.parallax.value;
         for (let i = 0; i < 5; i++) {
           const pop = Math.min(1, Math.max(0, intro * 6 - i * 0.6 - 0.4));
           const pic = pics[i];
@@ -233,7 +321,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
           const a = satFade * pop;
           const s = 0.6 + 0.4 * pop;
           canvas.save();
-          canvas.translate(p.x, p.y);
+          canvas.translate(p.x + par[0], p.y + par[1]);
           canvas.scale(s, s);
           if (a < 0.99) {
             // Fades (app open, dashboard drag) only: a small alpha layer.
@@ -266,10 +354,23 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
       const tremble = pal[20] * (1 - t);
       const sq = scene.squash.value;
       const introScale = 0.85 + 0.15 * intro;
+      // Interactive core: orientation, jelly ripples (aged by the scene clock),
+      // tap squash and drag stretch (AGENT_CORE_AND_FAMILY.md §3).
+      const clock = scene.clock.value;
+      const rp = scene.ripples.value;
+      const ripples: number[] = [];
+      for (let r = 0; r < rp.length; r += 4) ripples.push(rp[r], rp[r + 1], rp[r + 2], clock - rp[r + 3]);
+      const jd = scene.jellyDir.value;
+      const sd = scene.stretchDir.value;
       if ((dbg & 4) === 0) drawStone(canvas, low ? coreMeshLow : stoneCoreMesh, {
+        rot: qToMat(scene.orient.value),
+        ripples,
+        squash: [jd[0], jd[1], jd[2], scene.jelly.value],
+        stretch: [sd[0], sd[1], scene.stretch.value],
+        flash: scene.coreFlash.value,
         cx: g.x + (still ? 0 : tremble * Math.sin(720 * ph)),
         cy: g.y + (still ? 0 : tremble * Math.cos(864 * ph)),
-        R: g.r * introScale,
+        R: g.r * introScale * scene.corePulse.value,
         rotY: still ? 0.8 : 4 * ph,
         tiltX: 0.35 + (still ? 0 : 0.1 * Math.sin(2 * ph)),
         phase: still ? 0 : 4 * ph,

@@ -28,6 +28,10 @@ uniform float satAmt;
 uniform float lowPower;
 // 1 = transparent background (mini gem over other content): alpha follows brightness.
 uniform float clearBg;
+// Tap on the core (AGENT_CORE_AND_FAMILY.md §3.3): dust on the touched side is
+// pushed outward by up to pushAmt px, fading towards the far side.
+uniform float2 pushDir;
+uniform float pushAmt;
 
 float hash(float2 p) {
   p = fract(p * float2(123.34, 456.21));
@@ -99,8 +103,15 @@ half4 main(float2 p) {
   }
 
   // Dust ring (two interleaved layers; one on low-power devices).
-  float dust = dustLayer(d, radius, 1.0, 1.0);
-  if (lowPower < 0.5) dust += dustLayer(d, radius, 2.0, 0.8);
+  // Sampling the dust a little closer to the gem makes it appear pushed out.
+  float2 dd = d;
+  if (pushAmt > 0.01 && dist > 1.0) {
+    float2 dn = d / dist;
+    float w = smoothstep(-0.3, 1.0, dot(dn, pushDir));
+    dd = d - dn * pushAmt * w;
+  }
+  float dust = dustLayer(dd, radius, 1.0, 1.0);
+  if (lowPower < 0.5) dust += dustLayer(dd, radius, 2.0, 0.8);
   col += dustCol * dust * dustAmt;
 
   // Satellites: soft halo + sparkle motes in the agent colour.
@@ -109,7 +120,7 @@ half4 main(float2 p) {
     float sdist = length(sd2);
     if (sdist < satR * 2.6) {
       float3 c = satCols[i];
-      col += c * exp(-pow(sdist / (satR * 1.15), 2.0)) * 0.2 * satAmt;
+      col += c * exp(-pow(sdist / (satR * 1.2), 2.0)) * 0.27 * satAmt;
       if (sdist < satR * 1.05) {
         float2 mc = floor(sd2 / 3.2);
         float2 mh = hash2(mc + float(i) * 13.0);

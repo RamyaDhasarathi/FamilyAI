@@ -137,6 +137,12 @@ export const copy = {
     stage: (n: number, name: string) => `Stage ${n} · ${name}`,
     age: (rel: string, age: number) => `${rel} · ${age}`,
   },
+  core: {
+    label: "Family core. Tap to wobble, drag to spin, long-press to hear today's summary.",
+    stopLabel: 'Stop the summary',
+    wobble: 'Wobble',
+    playSummary: 'Play summary',
+  },
   placeholder: (title: string) => `${title} will connect to your FamilyOS account when the backend is wired up.`,
   scenarioLabels: { calm: 'Calm', insight: 'Insight', headsup: 'Heads-up', urgent: 'Urgent' },
 };

@@ -3,10 +3,11 @@
 // text and controls → Dashboard → modal sheets → toasts.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Keyframe, useAnimatedStyle, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Keyframe, useAnimatedStyle, useReducedMotion, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import type { AgentId } from '../theme/tokens';
 import { colors } from '../theme/tokens';
@@ -17,7 +18,6 @@ import { headlineItem, summaryCount } from '../mocks/scenarios';
 import { useFamilyOS, useMood } from '../store/useFamilyOS';
 import { OrbitSceneCanvas } from '../graphics/OrbitScene';
 import { OrbitSceneContext, ensureMorphData, useCreateOrbitScene } from '../graphics/sceneState';
-import { gemHome } from '../graphics/orbitLayout';
 import { useLowPowerProbe } from '../graphics/useLowPowerProbe';
 import { usePerfSampler } from '../graphics/usePerfSampler';
 import type { ScreenProps } from '../navigation/types';
@@ -27,6 +27,7 @@ import { SwipeCard } from '../components/SwipeCard';
 import { ToastHost } from '../components/Toast';
 import { HomeHeader, StatusBlock } from './HomeParts';
 import { SatelliteLayer } from './SatelliteLayer';
+import { CoreGestureLayer } from './CoreGestureLayer';
 import { TodaySheet } from './TodaySheet';
 import { NeedsYouSheet } from './NeedsYouSheet';
 import { ProfileMenu, type MenuTarget } from './ProfileMenu';
@@ -51,6 +52,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
   const frame = useMemo(() => ({ W: width, H: height, top: insets.top }), [width, height, insets.top]);
   const scene = useCreateOrbitScene('calm');
   const focused = useIsFocused();
+  const reduced = useReducedMotion();
   const st = useFamilyOS();
   const mood = useMood();
   const { start, stop } = useWalkthrough(scene);
@@ -133,10 +135,10 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
     else if (st.summaryMode === 'read') st.openSheet('today');
     else void start(undefined, true);
   };
-  const onGem = () => {
-    scene.squash.set(withSequence(withTiming(0.94, { duration: 90 }), withSpring(1, springs.squash)));
-    if (walking) stop();
-    else void start(undefined, st.summaryMode === 'listen');
+  // Long-press on the crystal plays today's summary (a tap now wobbles it, §3.2).
+  const onCoreLongPress = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void start(undefined, st.summaryMode === 'listen');
   };
   const onMenu = (t: MenuTarget) => {
     st.closeSheet();
@@ -168,7 +170,6 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
     });
 
   const fade = useAnimatedStyle(() => ({ opacity: Math.max(0, 1 - scene.dashT.value * 1.8) }));
-  const g = gemHome(frame);
   const single = !walking && st.needs.length === 1 && st.sheet === null ? st.needs[0] : null;
   const label = walking && step ? walkLabel(step.agent, st.walk.index + 1, st.walk.steps.length, !!st.walk.agent) : theme.label;
   const labelColor = walking && step ? colors.agents[step.agent] : theme.dot;
@@ -181,11 +182,14 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
         <GestureDetector gesture={swipeUp}>
           <Animated.View style={[StyleSheet.absoluteFill, fade]} pointerEvents={dashOpen ? 'none' : 'auto'}>
             {walking ? <Pressable style={StyleSheet.absoluteFill} onPress={stop} accessibilityLabel="Stop the summary" /> : null}
-            <Pressable
-              onPress={onGem}
-              style={[styles.gemHit, { left: g.x - g.r, top: g.y - g.r, width: g.r * 2, height: g.r * 2, borderRadius: g.r }]}
-              accessibilityRole="button"
-              accessibilityLabel={walking ? 'Stop the summary' : "FamilyOS core. Plays today's summary"}
+            <CoreGestureLayer
+              scene={scene}
+              frame={frame}
+              walking={walking}
+              reduced={reduced}
+              swipeUp={swipeUp}
+              onLongPress={onCoreLongPress}
+              onStop={stop}
             />
             <SatelliteLayer
               scene={scene}
@@ -267,7 +271,6 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  gemHit: { position: 'absolute' },
   status: { position: 'absolute', left: 0, right: 0 },
   bottomBar: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center' },
   ask: { flex: 1, marginRight: 10 },

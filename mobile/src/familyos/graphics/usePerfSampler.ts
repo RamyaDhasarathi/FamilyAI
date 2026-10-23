@@ -11,7 +11,7 @@ const N = 300;
 
 const SECTIONS = ['satRecord', 'satDraw', 'core', 'morph', 'picture', 'uniforms'];
 
-function report(samples: number[], prof: number[]) {
+function report(samples: number[], prof: number[], mx: number[]) {
   const sorted = [...samples].sort((a, b) => a - b);
   const avg = samples.reduce((s, v) => s + v, 0) / samples.length;
   const p95 = sorted[Math.floor(samples.length * 0.95)];
@@ -20,6 +20,7 @@ function report(samples: number[], prof: number[]) {
     `[perf] ${samples.length} frames: avg ${avg.toFixed(1)} ms (${(1000 / avg).toFixed(0)} fps), p95 ${p95.toFixed(1)} ms, >20 ms: ${slow}`
   );
   console.log(`[perf] per frame: ${prof.map((v, i) => `${SECTIONS[i]} ${(v / samples.length).toFixed(2)}`).join(' · ')} ms`);
+  console.log(`[perf] worst / calls: ${SECTIONS.map((n, i) => `${n} ${mx[i].toFixed(1)}/${mx[6 + i]}`).join(' · ')}`);
 }
 
 export function usePerfSampler(scene: OrbitScene) {
@@ -34,7 +35,7 @@ export function usePerfSampler(scene: OrbitScene) {
     });
     const arr = buf.get();
     if (arr.length >= N) {
-      scheduleOnRN(report, arr.slice(), scene.prof.get().slice());
+      scheduleOnRN(report, arr.slice(), scene.prof.get().slice(), scene.profMax.get().slice());
       buf.set([]);
     }
   }, false);
@@ -44,6 +45,7 @@ export function usePerfSampler(scene: OrbitScene) {
       if (s.devCommand && s.devCommand !== prev.devCommand && s.devCommand.cmd.perf) {
         buf.set([]);
         scene.prof.set([0, 0, 0, 0, 0, 0]);
+        scene.profMax.set(new Array(12).fill(0));
         cb.setActive(true);
         setTimeout(() => cb.setActive(false), 9000);
       }
