@@ -5,7 +5,7 @@ import type { AgentId } from '../theme/tokens';
 import type {
   AgentCard,
   AgentDetail,
-  FamilyMember,
+  Relationship,
   NeedsItem,
   Profile,
   SummaryMode,
@@ -15,6 +15,13 @@ import type {
 
 export const CURRENCY = '$';
 const C = CURRENCY;
+
+/**
+ * Field formats for family details (AGENT_CORE_AND_FAMILY.md §4.8): 'IN' uses
+ * Aadhaar, PAN, IFSC, UPI, +91 and PIN codes; 'US' uses SSN last 4, routing
+ * numbers, +1 and ZIP codes. Follows the currency unless set explicitly.
+ */
+export const REGION: 'IN' | 'US' = (CURRENCY as string) === '₹' ? 'IN' : 'US';
 
 export const NAMES = { me: 'Michael', partner: 'Sarah', son: 'Ethan', daughter: 'Mia', grandma: 'Linda' };
 const { me, son, daughter } = NAMES;
@@ -29,12 +36,13 @@ export const profile: Profile = {
 /** Video default: the summary button starts in Listen (spoken walkthrough). */
 export const defaultSummaryMode: SummaryMode = 'listen';
 
-export const family: FamilyMember[] = [
-  { id: 'm1', name: me, relationship: 'You', age: 42 },
-  { id: 'm2', name: NAMES.partner, relationship: 'Partner', age: 40 },
-  { id: 'm3', name: son, relationship: 'Son', age: 16 },
-  { id: 'm4', name: daughter, relationship: 'Daughter', age: 11 },
-  { id: 'm5', name: NAMES.grandma, relationship: 'Mother', age: 68 },
+/** The demo family seeded on a fresh install (mocks/familySeed.ts adds the details). */
+export const FAMILY_SEED: { key: string; fullName: string; relationship: Relationship; age: number }[] = [
+  { key: 'michael', fullName: `${me} Carter`, relationship: 'Self', age: 42 },
+  { key: 'sarah', fullName: `${NAMES.partner} Carter`, relationship: 'Spouse', age: 40 },
+  { key: 'ethan', fullName: `${son} Carter`, relationship: 'Son', age: 16 },
+  { key: 'mia', fullName: `${daughter} Carter`, relationship: 'Daughter', age: 11 },
+  { key: 'linda', fullName: `${NAMES.grandma} Carter`, relationship: 'Mother', age: 68 },
 ];
 
 export const agentNames: Record<AgentId, string> = {

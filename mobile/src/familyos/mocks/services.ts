@@ -11,7 +11,7 @@
 //   endpoints (/v1/me, /v1/household, /v1/obligations, …) to start from.
 import type { FamilyOSService, NeedsItem } from '../services/interfaces';
 import type { AgentId } from '../theme/tokens';
-import { agentDetails, agentWalkthroughs, dashboardCards, family, needsItems, profile, todayBrief } from './data';
+import { agentDetails, agentWalkthroughs, dashboardCards, needsItems, profile, todayBrief } from './data';
 import { greetingFor, replyTo, suggestionsFor } from './chatReplies';
 import { scenarioItems } from './scenarios';
 
@@ -24,7 +24,6 @@ const nextId = () => `m${Date.now()}-${msgId++}`;
 
 export const mockService: FamilyOSService = {
   getProfile: () => latency(profile),
-  getFamily: () => latency(family),
   getHomeSummary: () => latency({ greetingName: profile.name, dashboard: dashboardCards }),
   getTodayItems: () => latency(todayBrief),
   getNeedsYou: (scenario) => {

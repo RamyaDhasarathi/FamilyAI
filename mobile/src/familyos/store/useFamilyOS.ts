@@ -7,7 +7,6 @@ import { SCENARIOS } from '../theme/stateThemes';
 import type {
   AgentCard,
   ChatMessage,
-  FamilyMember,
   NeedsItem,
   Profile,
   SummaryMode,
@@ -23,6 +22,10 @@ export type SheetName = 'today' | 'needs' | 'profile' | 'chat' | null;
 export interface Toast {
   id: number;
   text: string;
+  /** Optional inline action, e.g. "Undo" (AGENT_CORE_AND_FAMILY.md §4.9). */
+  action?: { label: string; onPress: () => void };
+  /** Display time in ms (default 2.2 s). */
+  duration?: number;
 }
 
 export interface Walk {
@@ -39,7 +42,6 @@ interface State {
   booted: boolean;
   loggedIn: boolean;
   profile: Profile | null;
-  family: FamilyMember[];
   dashboard: AgentCard[];
   today: TodayBrief | null;
   seed: Scenario;
@@ -66,7 +68,7 @@ interface State {
   snooze(id: string): void;
   setSummaryMode(mode: SummaryMode): void;
   toggleSummaryMode(): void;
-  toast(text: string): void;
+  toast(text: string, opts?: { action?: Toast['action']; duration?: number }): void;
   dismissToast(id: number): void;
   openSheet(name: Exclude<SheetName, null>): void;
   openChat(thread: string, pending?: string): void;
@@ -90,7 +92,6 @@ export const useFamilyOS = create<State>((set, get) => ({
   booted: false,
   loggedIn: true,
   profile: null,
-  family: [],
   dashboard: [],
   today: null,
   seed: 'calm',
@@ -109,14 +110,13 @@ export const useFamilyOS = create<State>((set, get) => ({
   devCommand: null,
 
   async boot() {
-    const [profile, family, home, today, needs] = await Promise.all([
+    const [profile, home, today, needs] = await Promise.all([
       service.getProfile(),
-      service.getFamily(),
       service.getHomeSummary(),
       service.getTodayItems(),
       service.getNeedsYou(get().seed),
     ]);
-    set({ profile, family, dashboard: home.dashboard, today, needs: sortNeeds(needs), booted: true });
+    set({ profile, dashboard: home.dashboard, today, needs: sortNeeds(needs), booted: true });
   },
 
   async setScenario(s) {
@@ -151,9 +151,9 @@ export const useFamilyOS = create<State>((set, get) => ({
     get().setSummaryMode(get().summaryMode === 'listen' ? 'read' : 'listen');
   },
 
-  toast(text) {
+  toast(text, opts) {
     const id = ++toastId;
-    set({ toasts: [...get().toasts.slice(-1), { id, text }] });
+    set({ toasts: [...get().toasts.slice(-1), { id, text, action: opts?.action, duration: opts?.duration }] });
   },
 
   dismissToast(id) {

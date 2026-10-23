@@ -22,7 +22,23 @@ export const AVATAR_STAGES: AvatarStage[] = [
   { stage: 8, name: 'The Warm Solaria', ages: '60+', gif: require('../../../assets/familyos/avatars/anim/stage8_warm_solaria.gif'), png: require('../../../assets/familyos/avatars/still/stage8_warm_solaria.png') },
 ];
 
-/** Stage by age: 1: 3–5, 2: 6–8, 3: 9–12, 4: 13–15, 5: 16–18, 6: 19–25, 7: 26–59, 8: 60+. */
+/**
+ * Accent colour per stage (design.md §6): stage 1 pastel pink, 2 bubble cyan,
+ * 3 warm orange, 4 acid magenta, 5 prism cyan, 6 oasis mint, 7 teal-violet,
+ * 8 warm gold. Used for halos, orbit dots and tints.
+ */
+export const stageAccent: Record<number, string> = {
+  1: '#FF9EC7',
+  2: '#7FD8FF',
+  3: '#FF9A3C',
+  4: '#FF3FD2',
+  5: '#33D9FF',
+  6: '#5EE6C8',
+  7: '#7FA8FF',
+  8: '#FFC14D',
+};
+
+/** Stage by age: 1: up to 5 (under-3s too), 2: 6–8, 3: 9–12, 4: 13–15, 5: 16–18, 6: 19–25, 7: 26–59, 8: 60+. */
 export function avatarForAge(age: number): AvatarStage {
   const bounds = [5, 8, 12, 15, 18, 25, 59];
   const i = bounds.findIndex((b) => age <= b);

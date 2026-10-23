@@ -13,11 +13,69 @@ export interface Profile {
   email: string;
 }
 
+// ── Family members (AGENT_CORE_AND_FAMILY.md §4.2) ─────────────────────────
+
+export type Relationship =
+  | 'Self' | 'Spouse' | 'Partner' | 'Son' | 'Daughter' | 'Father' | 'Mother'
+  | 'Brother' | 'Sister' | 'Grandfather' | 'Grandmother' | 'Grandson' | 'Granddaughter'
+  | 'Uncle' | 'Aunt' | 'Nephew' | 'Niece' | 'Cousin' | 'In-law' | 'Other';
+
+export type SectionId = 'basic' | 'contact' | 'ids' | 'health' | 'banking';
+export type SectionStatus = 'complete' | 'needsUpdate' | 'notStarted';
+
+export interface MemberSection {
+  status: SectionStatus;
+  data: Record<string, unknown>;
+}
+
 export interface FamilyMember {
   id: string;
-  name: string;
-  relationship: string;
-  age: number;
+  /** True only for the account holder ("Self"). */
+  isOwner: boolean;
+  fullName: string;
+  preferredName?: string;
+  relationship: Relationship;
+  /** When relationship === 'Other'. */
+  relationshipOther?: string;
+  /** ISO date (YYYY-MM-DD). */
+  dateOfBirth: string;
+  photoUri?: string;
+  sections: Record<SectionId, MemberSection>;
+  createdAt: string;
+  updatedAt: string;
+  /** Set while a removal can still be undone (soft delete). */
+  deletedAt?: string;
+}
+// Derived, never stored: age, avatarStage (1–8), stageName, completion (0–1),
+// sectionsNeedingUpdate. See family/model.ts.
+
+export interface MemberBasics {
+  fullName: string;
+  preferredName?: string;
+  relationship: Relationship;
+  relationshipOther?: string;
+  dateOfBirth: string;
+  photoUri?: string;
+}
+
+/**
+ * Family-member storage. The mock (mocks/familyService.ts) keeps members on
+ * the device: non-sensitive fields in AsyncStorage, ID / health / banking data
+ * in SecureStore. A real backend implements the same contract.
+ */
+export interface FamilyService {
+  /** Active members (soft-deleted ones excluded), owner first. */
+  listMembers(): Promise<FamilyMember[]>;
+  getMember(id: string): Promise<FamilyMember | null>;
+  createMember(basics: MemberBasics): Promise<FamilyMember>;
+  updateBasics(id: string, patch: Partial<MemberBasics>): Promise<FamilyMember>;
+  updateSection(id: string, sectionId: SectionId, data: Record<string, unknown>, status: SectionStatus): Promise<FamilyMember>;
+  /** Soft delete: hidden from lists, restorable until purged. */
+  deleteMember(id: string): Promise<void>;
+  restoreMember(id: string): Promise<FamilyMember>;
+  /** Permanently delete, including the member's secure-store keys. */
+  purgeMember(id: string): Promise<void>;
+  resetDemoFamily(): Promise<FamilyMember[]>;
 }
 
 export interface TodayItem {
@@ -122,7 +180,6 @@ export interface ResolveResult {
 
 export interface FamilyOSService {
   getProfile(): Promise<Profile>;
-  getFamily(): Promise<FamilyMember[]>;
   getHomeSummary(): Promise<HomeSummary>;
   getTodayItems(): Promise<TodayBrief>;
   /** Open items for a scenario (the dev switcher seeds different sets). */

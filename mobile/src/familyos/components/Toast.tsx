@@ -1,8 +1,10 @@
-// Glass toast pill above the bottom bar; auto-hides after 2.2 s (AGENT.md §8.1.8).
+// Glass toast pill above the bottom bar; auto-hides after 2.2 s (AGENT.md §8.1.8),
+// or after its own duration. An optional action ("Undo") sits inside the pill.
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useFamilyOS, type Toast } from '../store/useFamilyOS';
+import { Pressy } from './Pressy';
 import { durations } from '../theme/motion';
 import { colors } from '../theme/tokens';
 import { type as T } from '../theme/typography';
@@ -11,14 +13,32 @@ import { AppText } from './AppText';
 function ToastPill({ toast }: { toast: Toast }) {
   const dismiss = useFamilyOS((s) => s.dismissToast);
   useEffect(() => {
-    const id = setTimeout(() => dismiss(toast.id), durations.toast);
+    const id = setTimeout(() => dismiss(toast.id), toast.duration ?? durations.toast);
     return () => clearTimeout(id);
-  }, [toast.id, dismiss]);
+  }, [toast.id, toast.duration, dismiss]);
+  const action = toast.action;
   return (
-    <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOut.duration(200)} style={styles.pill}>
+    <Animated.View
+      entering={FadeInDown.duration(220)}
+      exiting={FadeOut.duration(200)}
+      pointerEvents={action ? 'auto' : 'none'}
+      style={[styles.pill, action && styles.withAction]}
+    >
       <AppText style={[T.smallStrong, styles.text]} accessibilityLiveRegion="polite">
         {toast.text}
       </AppText>
+      {action ? (
+        <Pressy
+          onPress={() => {
+            dismiss(toast.id);
+            action.onPress();
+          }}
+          style={styles.action}
+          accessibilityLabel={action.label}
+        >
+          <AppText style={[T.smallStrong, styles.actionText]}>{action.label}</AppText>
+        </Pressy>
+      ) : null}
     </Animated.View>
   );
 }
@@ -27,7 +47,7 @@ export function ToastHost({ bottom }: { bottom: number }) {
   const toasts = useFamilyOS((s) => s.toasts);
   const last = toasts[toasts.length - 1];
   return (
-    <View pointerEvents="none" style={[styles.host, { bottom }]}>
+    <View pointerEvents="box-none" style={[styles.host, { bottom }]}>
       {last ? <ToastPill key={last.id} toast={last} /> : null}
     </View>
   );
@@ -44,4 +64,7 @@ const styles = StyleSheet.create({
     borderColor: colors.glassBorder,
   },
   text: { color: colors.ink, textAlign: 'center', fontSize: 12 },
+  withAction: { flexDirection: 'row', alignItems: 'center', paddingRight: 6, paddingVertical: 5 },
+  action: { marginLeft: 12, paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: colors.pillPrimaryBg, justifyContent: 'center' },
+  actionText: { color: colors.pillPrimaryInk, fontSize: 12 },
 });
