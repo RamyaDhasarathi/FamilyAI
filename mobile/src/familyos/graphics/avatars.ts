@@ -1,5 +1,4 @@
 // Avatar life stages from the design pack (design.md §6, AGENT.md §11.3).
-/* eslint-disable @typescript-eslint/no-require-imports */
 
 export interface AvatarStage {
   stage: number;

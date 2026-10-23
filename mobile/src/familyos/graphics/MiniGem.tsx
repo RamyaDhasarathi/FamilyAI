@@ -31,7 +31,7 @@ function MiniGemView({ size, scenario = 'calm', agentColor }: Props) {
   const clock = useSharedValue(0);
   const pal = useMemo(() => (agentColor ? agentPalette(agentColor) : paletteOf(scenario)), [agentColor, scenario]);
   const cb = useFrameCallback((f) => {
-    clock.value += Math.min(f.timeSincePreviousFrame ?? 16, 50) / 1000;
+    clock.set(clock.get() + Math.min(f.timeSincePreviousFrame ?? 16, 50) / 1000);
   }, false);
   useEffect(() => {
     cb.setActive(!reduced);

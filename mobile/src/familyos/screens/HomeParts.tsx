@@ -79,12 +79,16 @@ interface StatusProps {
   calm: boolean;
   more?: string;
   onMore?: () => void;
+  /** Label only (the single remaining item is shown as a card below it). */
+  compact?: boolean;
 }
 
-export function StatusBlock({ label, color, headline, calm, more, onMore }: StatusProps) {
+export function StatusBlock({ label, color, headline, calm, more, onMore, compact }: StatusProps) {
   return (
     <View style={styles.status} pointerEvents="box-none">
       <StatusLine label={label} color={color} />
+      {compact ? null : (
+        <>
       <View style={styles.headlineBox} pointerEvents="none">
         <Animated.View key={headline} entering={headlineIn} exiting={FadeOut.duration(160)} style={styles.headlineAbs}>
           <AppText
@@ -96,11 +100,15 @@ export function StatusBlock({ label, color, headline, calm, more, onMore }: Stat
           </AppText>
         </Animated.View>
       </View>
-      {more ? (
-        <Pressy onPress={onMore} style={styles.more} accessibilityLabel={`${more}, open everything that needs you`}>
-          <AppText style={[T.chip, { fontSize: 10.5 }]}>{more}</AppText>
-        </Pressy>
-      ) : null}
+      <View style={styles.moreSlot}>
+        {more ? (
+          <Pressy onPress={onMore} style={styles.more} accessibilityLabel={`${more}, open everything that needs you`}>
+            <AppText style={[T.chip, { fontSize: 10.5 }]}>{more}</AppText>
+          </Pressy>
+        ) : null}
+      </View>
+        </>
+      )}
     </View>
   );
 }
@@ -134,10 +142,10 @@ const styles = StyleSheet.create({
   },
   avatarChev: { marginLeft: 6 },
   status: { alignItems: 'center', paddingHorizontal: 28 },
-  headlineBox: { height: 54, alignSelf: 'stretch', marginTop: 10 },
+  headlineBox: { height: 52, alignSelf: 'stretch', marginTop: 10 },
   headlineAbs: { position: 'absolute', left: 0, right: 0, top: 0, alignItems: 'center' },
+  moreSlot: { height: 26, justifyContent: 'center' },
   more: {
-    marginTop: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,

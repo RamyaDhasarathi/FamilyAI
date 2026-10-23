@@ -20,9 +20,9 @@ export function AgentReveal({ reveal, onCovered, onDone }: { reveal: Reveal; onC
   const R = Math.hypot(Math.max(x, width - x), Math.max(y, height - y));
   const p = useSharedValue(0);
   useEffect(() => {
-    p.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) }, (f) => {
+    p.set(withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) }, (f) => {
       if (f) scheduleOnRN(onCovered);
-    });
+    }));
     const id = setTimeout(onDone, 1100);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps

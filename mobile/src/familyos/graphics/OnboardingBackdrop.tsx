@@ -33,7 +33,7 @@ function Backdrop() {
   const reduced = useReducedMotion();
   const clock = useSharedValue(0);
   const cb = useFrameCallback((f) => {
-    clock.value += Math.min(f.timeSincePreviousFrame ?? 16, 50) / 1000;
+    clock.set(clock.get() + Math.min(f.timeSincePreviousFrame ?? 16, 50) / 1000);
   }, false);
   useEffect(() => {
     cb.setActive(!reduced);

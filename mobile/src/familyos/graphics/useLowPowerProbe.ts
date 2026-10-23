@@ -17,13 +17,13 @@ export function useLowPowerProbe(scene: OrbitScene, onDecide: (low: boolean, avg
   const cb = useFrameCallback((f) => {
     const dt = f.timeSincePreviousFrame;
     if (dt == null) return;
-    n.value += 1;
+    n.set(n.get() + 1);
     if (n.value <= SKIP) return;
-    sum.value += Math.min(dt, 100);
+    sum.set(sum.get() + Math.min(dt, 100));
     if (n.value === SKIP + SAMPLE) {
       const avg = sum.value / SAMPLE;
       const low = avg > SLOW_MS;
-      if (low) scene.lowPower.value = true;
+      if (low) scene.lowPower.set(true);
       scheduleOnRN(onDecide, low, avg);
     }
   }, true);

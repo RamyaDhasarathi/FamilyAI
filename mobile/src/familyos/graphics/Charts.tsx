@@ -53,8 +53,8 @@ export function Sparkline({ series, color, width, height }: { series: number[]; 
   }, [series, width, height]);
   const t = useSharedValue(0);
   useEffect(() => {
-    t.value = 0;
-    t.value = withTiming(1, { duration: durations.sparkline, easing: easings.inOutCubic });
+    t.set(0);
+    t.set(withTiming(1, { duration: durations.sparkline, easing: easings.inOutCubic }));
   }, [series, t]);
   const fillOpacity = useDerivedValue(() => t.value);
   const dotR = useDerivedValue(() => (t.value > 0.95 ? 4 : 0));
@@ -76,7 +76,7 @@ export function Sparkline({ series, color, width, height }: { series: number[]; 
 function Bar({ h, i, color, maxH }: { h: number; i: number; color: string; maxH: number }) {
   const v = useSharedValue(0);
   useEffect(() => {
-    v.value = withDelay(i * 60, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }));
+    v.set(withDelay(i * 60, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) })));
   }, [i, v]);
   const st = useAnimatedStyle(() => ({ height: Math.max(8, h * maxH) * v.value }));
   return <Animated.View style={[styles.bar, { backgroundColor: color }, st]} />;
@@ -96,7 +96,7 @@ export function WeekBars({ bars, todayIndex, color, height = 72 }: { bars: numbe
 function ProgressRow({ pct, color, i }: { pct: number; color: string; i: number }) {
   const v = useSharedValue(0);
   useEffect(() => {
-    v.value = withDelay(i * 90, withTiming(pct, { duration: 700, easing: Easing.out(Easing.cubic) }));
+    v.set(withDelay(i * 90, withTiming(pct, { duration: 700, easing: Easing.out(Easing.cubic) })));
   }, [pct, i, v]);
   const st = useAnimatedStyle(() => ({ width: `${v.value * 100}%` }));
   return (
@@ -130,7 +130,7 @@ export function TaskRing({ pct, color, size = 84 }: { pct: number; color: string
   }, [r, size]);
   const t = useSharedValue(0);
   useEffect(() => {
-    t.value = withTiming(pct, { duration: 900, easing: easings.inOutCubic });
+    t.set(withTiming(pct, { duration: 900, easing: easings.inOutCubic }));
   }, [pct, t]);
   return (
     <Canvas style={{ width: size, height: size }}>

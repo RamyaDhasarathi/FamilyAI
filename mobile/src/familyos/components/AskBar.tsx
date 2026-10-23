@@ -30,14 +30,14 @@ function WaveBar({ i, active }: { i: number; active: boolean }) {
   const v = useSharedValue(0.3);
   useEffect(() => {
     if (active) {
-      v.value = withRepeat(
+      v.set(withRepeat(
         withTiming(1, { duration: 260 + i * 70, easing: Easing.inOut(Easing.sin) }),
         -1,
         true
-      );
+      ));
     } else {
       cancelAnimation(v);
-      v.value = withTiming(0.3, { duration: 150 });
+      v.set(withTiming(0.3, { duration: 150 }));
     }
   }, [active, i, v]);
   const st = useAnimatedStyle(() => ({ transform: [{ scaleY: v.value }] }));
@@ -47,10 +47,10 @@ function WaveBar({ i, active }: { i: number; active: boolean }) {
 export function AskBar({ placeholder, icon = 'keyboard', onPress, onMic, listening = false, style }: Props) {
   const pulse = useSharedValue(0);
   useEffect(() => {
-    if (listening) pulse.value = withRepeat(withTiming(1, { duration: 700 }), -1, true);
+    if (listening) pulse.set(withRepeat(withTiming(1, { duration: 700 }), -1, true));
     else {
       cancelAnimation(pulse);
-      pulse.value = withTiming(0, { duration: 200 });
+      pulse.set(withTiming(0, { duration: 200 }));
     }
   }, [listening, pulse]);
   const micStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.08 * pulse.value }] }));

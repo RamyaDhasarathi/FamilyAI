@@ -17,7 +17,7 @@ export const colors = {
   glassBorder: 'rgba(255,255,255,0.12)',
   glassHighlight: 'rgba(255,255,255,0.08)',
   glassFallback: 'rgba(20,22,28,0.82)',
-  sheetFill: 'rgba(28,31,40,0.72)',
+  sheetFill: 'rgba(26,29,38,0.9)',
   cardFill: 'rgba(255,255,255,0.055)',
   divider: 'rgba(255,255,255,0.07)',
   scrim: 'rgba(0,0,0,0.55)',

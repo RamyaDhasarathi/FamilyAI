@@ -7,6 +7,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeOut, LinearTransition, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { ChevronRight } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { AgentId } from '../theme/tokens';
 import { colors, radii } from '../theme/tokens';
 import { springs } from '../theme/motion';
@@ -75,11 +76,11 @@ export function DashboardSheet({ scene, open, onSettle, onOpenAgent, onOpenSumma
   const pan = Gesture.Pan()
     .activeOffsetY(10)
     .onUpdate((e) => {
-      scene.dashT.value = Math.min(1, Math.max(0, 1 - e.translationY / travel));
+      scene.dashT.set(Math.min(1, Math.max(0, 1 - e.translationY / travel)));
     })
     .onEnd((e) => {
       const close = scene.dashT.value < 0.7 || e.velocityY > 700;
-      scene.dashT.value = withSpring(close ? 0 : 1, springs.soft);
+      scene.dashT.set(withSpring(close ? 0 : 1, springs.soft));
       scheduleOnRN(onSettle, !close);
     });
 
@@ -134,6 +135,7 @@ export function DashboardSheet({ scene, open, onSettle, onOpenAgent, onOpenSumma
           ) : null}
         </ScrollView>
         <View style={[styles.askWrap, { paddingBottom: insets.bottom + 12 }]}>
+          <LinearGradient colors={['rgba(24,27,36,0)', 'rgba(24,27,36,0.96)']} locations={[0, 0.45]} style={StyleSheet.absoluteFill} pointerEvents="none" />
           <AskBar placeholder={copy.askPlaceholder} icon="message" onPress={onAsk} onMic={onMic} listening={listening} />
         </View>
       </Glass>
@@ -178,5 +180,5 @@ const styles = StyleSheet.create({
   summaryText: { flex: 1 },
   needs: { marginTop: 18 },
   needsHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  askWrap: { position: 'absolute', left: 14, right: 14, bottom: 0, paddingTop: 10 },
+  askWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 28, paddingHorizontal: 14 },
 });

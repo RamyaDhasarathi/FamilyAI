@@ -63,8 +63,8 @@ export function AgentDetailScreen({ route, navigation }: ScreenProps<'Agent'>) {
   return (
     <View style={styles.root}>
       <View style={[styles.top, { height: insets.top + 64 }]}>
-        <View style={[styles.gem, { top: insets.top - 12 }]} pointerEvents="none">
-          <MiniGem size={84} agentColor={color} />
+        <View style={[styles.gem, { top: insets.top - 6 }]} pointerEvents="none">
+          <MiniGem size={72} agentColor={color} />
         </View>
         <Pressy onPress={() => navigation.goBack()} style={[styles.back, { top: insets.top + 8 }]} accessibilityLabel="Back">
           <ChevronLeft size={20} color={colors.ink} />
@@ -108,6 +108,12 @@ export function AgentDetailScreen({ route, navigation }: ScreenProps<'Agent'>) {
           </ScrollView>
         </LinearGradient>
       </Animated.View>
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.92)']}
+        locations={[0, 0.5]}
+        style={[styles.askFade, { height: insets.bottom + 100 }]}
+        pointerEvents="none"
+      />
       <View style={[styles.ask, { bottom: insets.bottom + 12 }]}>
         <AskBar placeholder={copy.askAgent(name)} icon="message" onPress={() => openChat()} onMic={onMic} listening={listening} />
       </View>
@@ -151,4 +157,5 @@ const styles = StyleSheet.create({
   statGap: { marginLeft: 8 },
   section: { marginTop: 22, marginBottom: 2 },
   ask: { position: 'absolute', left: 16, right: 16 },
+  askFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

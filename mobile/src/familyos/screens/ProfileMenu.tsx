@@ -40,15 +40,15 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
   const toggle = useFamilyOS((s) => s.toggleSummaryMode);
   const [mounted, setMounted] = useState(visible);
   const p = useSharedValue(0);
+  if (visible && !mounted) setMounted(true);
 
   useEffect(() => {
     if (visible) {
-      setMounted(true);
-      p.value = withSpring(1, springs.soft);
+      p.set(withSpring(1, springs.soft));
     } else if (mounted) {
-      p.value = withTiming(0, { duration: 180 }, (f) => {
+      p.set(withTiming(0, { duration: 180 }, (f) => {
         if (f) scheduleOnRN(setMounted, false);
-      });
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -89,7 +89,9 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
             </View>
             <View style={styles.headText}>
               <AppText style={T.bodyStrong}>{profile.name}</AppText>
-              <AppText style={[T.small, { fontSize: 12 }]}>{profile.plan}</AppText>
+              <AppText style={[T.small, { fontSize: 11.5 }]} numberOfLines={1}>
+                {profile.plan}
+              </AppText>
             </View>
             <ClosePill onPress={onClose} />
           </View>
@@ -118,7 +120,7 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
 
 const styles = StyleSheet.create({
   scrim: { backgroundColor: colors.scrim },
-  anchor: { position: 'absolute', right: 14, width: 262 },
+  anchor: { position: 'absolute', right: 12, width: 284 },
   card: { paddingVertical: 8 },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10 },
   avatar: {

@@ -26,7 +26,7 @@ interface Props {
 export function SummaryButton({ mode, playing, progress, onPress }: Props) {
   const p = useSharedValue(0);
   useEffect(() => {
-    p.value = withTiming(playing ? progress : 0, { duration: playing ? 600 : 250, easing: Easing.out(Easing.cubic) });
+    p.set(withTiming(playing ? progress : 0, { duration: playing ? 600 : 250, easing: Easing.out(Easing.cubic) }));
   }, [playing, progress, p]);
   const ring = useAnimatedProps(() => ({ strokeDashoffset: CIRC * (1 - p.value) }));
   const Icon = playing ? Square : mode === 'listen' ? ListPlus : FileText;

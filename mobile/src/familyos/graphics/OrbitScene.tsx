@@ -9,7 +9,7 @@ import { AGENT_IDS, colors, hexToRgb } from '../theme/tokens';
 import { ambientEffect } from './ambientShader';
 import { coreMesh, coreMeshLow, satelliteMeshes } from './crystalGeometry';
 import { drawCrystal } from './crystalRender';
-import { drawMorph } from './ParticleMorph';
+import { drawBurst, drawMorph } from './ParticleMorph';
 import { currentPalette, type OrbitScene } from './sceneState';
 import { gemAt, loopPhase, satellitePos, satelliteRadius, type Frame } from './orbitLayout';
 
@@ -31,7 +31,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
   const reduced = useReducedMotion();
   const cb = useFrameCallback((info) => {
     const dt = info.timeSincePreviousFrame ?? 16;
-    scene.clock.value += Math.min(dt, 50) / 1000;
+    scene.clock.set(scene.clock.get() + Math.min(dt, 50) / 1000);
   }, false);
 
   useEffect(() => {
@@ -170,6 +170,7 @@ function OrbitSceneView({ scene, frame, paused, blurred }: Props) {
         ph,
         lowPower: low,
       });
+      drawBurst(canvas, scene.morph.value, scene.burst.value, g.x, g.y, g.r);
     })
   );
 

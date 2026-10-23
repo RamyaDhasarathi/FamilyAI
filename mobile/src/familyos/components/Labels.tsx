@@ -1,7 +1,7 @@
 // Small typographic pieces: section labels, the status line (● CALM),
 // card meta rows, and the count badge.
 import { StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import { colors, sizes } from '../theme/tokens';
+import { sizes } from '../theme/tokens';
 import { type as T } from '../theme/typography';
 import { AppText } from './AppText';
 

@@ -1,6 +1,6 @@
 // Chat pieces (AGENT.md §8.6): bubbles, typing indicator, suggestion chips.
 import { useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -34,10 +34,10 @@ export function ChatBubble({ msg }: { msg: ChatMessage }) {
 function Dot({ i }: { i: number }) {
   const v = useSharedValue(0.3);
   useEffect(() => {
-    v.value = withDelay(
+    v.set(withDelay(
       i * 150,
       withRepeat(withSequence(withTiming(1, { duration: 300 }), withTiming(0.3, { duration: 300 })), -1, false)
-    );
+    ));
   }, [i, v]);
   const st = useAnimatedStyle(() => ({ opacity: v.value, transform: [{ translateY: -2 * v.value }] }));
   return <Animated.View style={[styles.dot, st]} />;

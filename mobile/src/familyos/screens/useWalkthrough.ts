@@ -20,18 +20,18 @@ export function morphScene(scene: OrbitScene, shape: number) {
   if (from === shape && scene.morphAlpha.value > 0.5) return;
   const pal = currentPalette(scene);
   const gemColour = [pal[10], pal[11], pal[12]];
-  scene.morphFrom.value = from;
-  scene.morphColFrom.value = from === 0 ? gemColour : scene.morphColTo.value;
-  scene.morphColTo.value = shape === 0 ? gemColour : AGENT_RGB[shape - 1];
-  scene.morphTo.value = shape;
-  scene.morphT.value = 0;
-  scene.morphT.value = withTiming(1, { duration: durations.morph, easing: Easing.linear });
+  scene.morphFrom.set(from);
+  scene.morphColFrom.set(from === 0 ? gemColour : scene.morphColTo.value);
+  scene.morphColTo.set(shape === 0 ? gemColour : AGENT_RGB[shape - 1]);
+  scene.morphTo.set(shape);
+  scene.morphT.set(0);
+  scene.morphT.set(withTiming(1, { duration: durations.morph, easing: Easing.linear }));
   if (shape !== 0) {
-    scene.morphAlpha.value = withTiming(1, { duration: 220 });
-    scene.explode.value = withTiming(1, { duration: durations.dissolve, easing: Easing.out(Easing.cubic) });
+    scene.morphAlpha.set(withTiming(1, { duration: 220 }));
+    scene.explode.set(withTiming(1, { duration: durations.dissolve, easing: Easing.out(Easing.cubic) }));
   } else {
-    scene.morphAlpha.value = withDelay(520, withTiming(0, { duration: 380 }));
-    scene.explode.value = withDelay(320, withTiming(0, { duration: 700, easing: Easing.inOut(Easing.cubic) }));
+    scene.morphAlpha.set(withDelay(520, withTiming(0, { duration: 380 })));
+    scene.explode.set(withDelay(320, withTiming(0, { duration: 700, easing: Easing.inOut(Easing.cubic) })));
   }
 }
 
@@ -51,7 +51,7 @@ export function useWalkthrough(scene: OrbitScene) {
     run.current += 1;
     clear();
     void Speech.stop();
-    scene.satHighlight.value = -1;
+    scene.satHighlight.set(-1);
     morphScene(scene, 0);
     setWalk({ active: false, index: 0 });
   }, [scene, setWalk]);
@@ -75,7 +75,7 @@ export function useWalkthrough(scene: OrbitScene) {
         setWalk({ index: i });
         const s = steps[i];
         const k = AGENT_IDS.indexOf(s.agent);
-        scene.satHighlight.value = k;
+        scene.satHighlight.set(k);
         morphScene(scene, k + 1);
         const t0 = Date.now();
         const next = () => {

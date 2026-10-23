@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     borderColor: colors.glassBorder,
     padding: 14,
   },
-  tileValue: { marginTop: 8, marginBottom: 6, fontSize: 24 },
+  tileValue: { marginTop: 8, marginBottom: 6, fontSize: 24, lineHeight: 30 },
   tileDetail: { fontSize: 12, lineHeight: 16 },
   todayLabel: { marginTop: 14 },
   row: {

@@ -57,20 +57,21 @@ export function ModalCard({
   const p = useSharedValue(0);
   const drag = useSharedValue(0);
   const kb = useAnimatedKeyboard();
+  // Mount as soon as it becomes visible (derived during render); unmount after the exit animation.
+  if (visible && !mounted) setMounted(true);
 
   useEffect(() => {
     if (visible) {
-      setMounted(true);
-      drag.value = 0;
-      p.value = withSpring(1, springs.soft);
+      drag.set(0);
+      p.set(withSpring(1, springs.soft));
     } else if (mounted) {
       const done = () => {
         setMounted(false);
         onClosed?.();
       };
-      p.value = withTiming(0, { duration: 220, easing: Easing.in(Easing.cubic) }, (fin) => {
+      p.set(withTiming(0, { duration: 220, easing: Easing.in(Easing.cubic) }, (fin) => {
         if (fin) scheduleOnRN(done);
-      });
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -88,11 +89,11 @@ export function ModalCard({
     .activeOffsetY(8)
     .failOffsetX([-20, 20])
     .onUpdate((e) => {
-      drag.value = Math.max(0, e.translationY);
+      drag.set(Math.max(0, e.translationY));
     })
     .onEnd((e) => {
       if (e.translationY > 110 || e.velocityY > 900) scheduleOnRN(onClose);
-      else drag.value = withSpring(0, springs.snappy);
+      else drag.set(withSpring(0, springs.snappy));
     });
 
   const backdrop = useAnimatedStyle(() => ({ opacity: Math.min(1, p.value) }));

@@ -15,9 +15,9 @@ export function useScenarioSync(scene: OrbitScene, mood: Scenario) {
     const target = paletteOf(mood);
     if (first.current) {
       first.current = false;
-      scene.paletteFrom.value = target;
-      scene.paletteTo.value = target;
-      scene.paletteT.value = 1;
+      scene.paletteFrom.set(target);
+      scene.paletteTo.set(target);
+      scene.paletteT.set(1);
       return;
     }
     // Start from wherever the blend currently is, so rapid changes never snap.
@@ -25,10 +25,10 @@ export function useScenarioSync(scene: OrbitScene, mood: Scenario) {
     const b = scene.paletteTo.value;
     const t = Math.min(1, scene.paletteT.value);
     const cur = new Array(PALETTE_LEN).fill(0).map((_, i) => a[i] + (b[i] - a[i]) * t);
-    scene.paletteFrom.value = cur;
-    scene.paletteTo.value = target;
-    scene.paletteT.value = 0;
-    scene.paletteT.value = withTiming(1, { duration: durations.scenario, easing: easings.inOutSine });
+    scene.paletteFrom.set(cur);
+    scene.paletteTo.set(target);
+    scene.paletteT.set(0);
+    scene.paletteT.set(withTiming(1, { duration: durations.scenario, easing: easings.inOutSine }));
   }, [mood, scene]);
 }
 
@@ -45,8 +45,9 @@ export function useCelebration(scene: OrbitScene) {
     if (st.sheet === 'needs') st.closeSheet();
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     st.toast(copy.allDoneToast);
-    scene.burst.value = withSequence(withTiming(1, { duration: 260 }), withTiming(0, { duration: 1400 }));
-    scene.squash.value = withSequence(withTiming(0.9, { duration: 120 }), withTiming(1, { duration: 500 }));
+    scene.burst.set(1);
+    scene.burst.set(withTiming(0, { duration: 1500, easing: easings.outCubic }));
+    scene.squash.set(withSequence(withTiming(0.9, { duration: 120 }), withTiming(1, { duration: 500 })));
   }, [count, seed, scene]);
 }
 
@@ -59,7 +60,7 @@ export function useListening(scene: OrbitScene) {
     if (timer.current) return;
     setListening(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    scene.listen.value = withRepeat(
+    scene.listen.set(withRepeat(
       withSequence(
         withTiming(0.9, { duration: 110 }),
         withTiming(0.35, { duration: 150 }),
@@ -67,11 +68,11 @@ export function useListening(scene: OrbitScene) {
         withTiming(0.15, { duration: 170 })
       ),
       -1
-    );
+    ));
     timer.current = setTimeout(() => {
       timer.current = null;
       cancelAnimation(scene.listen);
-      scene.listen.value = withTiming(0, { duration: 250 });
+      scene.listen.set(withTiming(0, { duration: 250 }));
       setListening(false);
       openChat('home', copy.heardTranscript);
     }, durations.listen);

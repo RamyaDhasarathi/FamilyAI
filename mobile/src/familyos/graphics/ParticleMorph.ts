@@ -136,3 +136,30 @@ export function drawMorph(canvas: SkCanvas, d: MorphData, s: MorphState) {
     canvas.drawPoints(PointMode.Points, buckets[k], paint);
   }
 }
+
+/**
+ * Celebration burst when the needs-you list empties (AGENT.md §8.4): particles
+ * leave the gem's rim radially and fade. `b` runs 1 → 0, so travel = 1 − b
+ * with an ease-out, and alpha = b.
+ */
+export function drawBurst(canvas: SkCanvas, d: MorphData, b: number, cx: number, cy: number, R: number) {
+  'worklet';
+  if (b <= 0.01 || d.n === 0) return;
+  const k = 1 - b;
+  const travel = 1 - (1 - k) * (1 - k);
+  const pts: { x: number; y: number }[] = [];
+  const n = Math.min(320, d.n);
+  for (let i = 0; i < n; i++) {
+    const a = d.phase[i];
+    const speed = 0.6 + 0.8 * d.delay[i] / 0.35;
+    const r = R * (0.85 + 1.5 * travel * speed);
+    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  }
+  const paint = Skia.Paint();
+  paint.setStyle(PaintStyle.Stroke);
+  paint.setStrokeCap(StrokeCap.Round);
+  paint.setAntiAlias(true);
+  paint.setStrokeWidth(2.4);
+  paint.setColor(Skia.Color(`rgba(170,255,210,${Math.min(1, b * 1.2)})`));
+  canvas.drawPoints(PointMode.Points, pts, paint);
+}

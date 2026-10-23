@@ -47,18 +47,24 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
   const { listening, listen } = useListening(scene);
   const [dashOpen, setDashOpen] = useState(false);
   const [reveal, setReveal] = useState<Reveal | null>(null);
+  const [singleH, setSingleH] = useState(140);
   useScenarioSync(scene, mood);
   useCelebration(scene);
-  useLowPowerProbe(scene, (low) => low && st.setLowPower(true));
+  useLowPowerProbe(scene, (low, avg) => {
+    if (__DEV__) console.log(`[perf] Home UI-thread frame avg ${avg.toFixed(1)} ms (${(1000 / avg).toFixed(0)} fps), lowPower=${low}`);
+    if (low) st.setLowPower(true);
+  });
 
   useEffect(() => {
-    scene.intro.value = withTiming(1, { duration: 1100 });
+    // Home normally opens after Loading has booted the store; boot here if not.
+    if (!useFamilyOS.getState().booted) void useFamilyOS.getState().boot();
+    scene.intro.set(withTiming(1, { duration: 1100 }));
     // Icon sampling uses Skia paths on the JS thread; do it after first paint.
     const id = setTimeout(() => ensureMorphData(scene), 400);
     return () => clearTimeout(id);
   }, [scene]);
   useEffect(() => {
-    scene.lowPower.value = st.lowPower;
+    scene.lowPower.set(st.lowPower);
   }, [st.lowPower, scene]);
 
   // Android back: sheets close themselves; then the dashboard.
@@ -66,7 +72,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
         if (!dashOpen) return false;
-        scene.dashT.value = withSpring(0, springs.soft);
+        scene.dashT.set(withSpring(0, springs.soft));
         setDashOpen(false);
         return true;
       });
@@ -74,7 +80,28 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
     }, [dashOpen, scene])
   );
 
+  // Dev deep links (navigation/devLinks.ts): open/close the dashboard, start a walkthrough.
+  useEffect(
+    () =>
+      useFamilyOS.subscribe((s, prev) => {
+        const dev = s.devCommand;
+        if (!dev || dev === prev.devCommand) return;
+        if (dev.cmd.dash) {
+          const open = dev.cmd.dash === '1';
+          scene.dashT.set(withSpring(open ? 1 : 0, springs.soft));
+          setDashOpen(open);
+        }
+        if (dev.cmd.stop) stop();
+        if (dev.cmd.walk) void start(dev.cmd.walk === 'today' ? undefined : (dev.cmd.walk as AgentId), false);
+      }),
+    [scene, start, stop]
+  );
+
   const walking = st.walk.active;
+  // Opening a sheet or the dashboard ends a running walkthrough.
+  useEffect(() => {
+    if ((st.sheet !== null || dashOpen) && useFamilyOS.getState().walk.active) stop();
+  }, [st.sheet, dashOpen, stop]);
   const step = st.walk.steps[st.walk.index];
   const top = headlineItem(st.needs);
   const { n, word } = summaryCount(st.needs);
@@ -94,7 +121,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
     else void start(undefined, true);
   };
   const onGem = () => {
-    scene.squash.value = withSequence(withTiming(0.94, { duration: 90 }), withSpring(1, springs.squash));
+    scene.squash.set(withSequence(withTiming(0.94, { duration: 90 }), withSpring(1, springs.squash)));
     if (walking) stop();
     else void start(undefined, st.summaryMode === 'listen');
   };
@@ -119,11 +146,11 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
       if (walking) scheduleOnRN(stop);
     })
     .onUpdate((e) => {
-      scene.dashT.value = Math.min(1, Math.max(0, -e.translationY / (height * 0.55)));
+      scene.dashT.set(Math.min(1, Math.max(0, -e.translationY / (height * 0.55))));
     })
     .onEnd((e) => {
       const open = scene.dashT.value > 0.3 || e.velocityY < -500;
-      scene.dashT.value = withSpring(open ? 1 : 0, springs.soft);
+      scene.dashT.set(withSpring(open ? 1 : 0, springs.soft));
       scheduleOnRN(setDashOpen, open);
     });
 
@@ -139,7 +166,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
       <View style={styles.root}>
         <OrbitSceneCanvas scene={scene} frame={frame} paused={!focused} blurred={st.sheet !== null} />
         <GestureDetector gesture={swipeUp}>
-          <Animated.View style={[StyleSheet.absoluteFill, fade]} pointerEvents={dashOpen ? 'none' : 'box-none'}>
+          <Animated.View style={[StyleSheet.absoluteFill, fade]} pointerEvents={dashOpen ? 'none' : 'auto'}>
             {walking ? <Pressable style={StyleSheet.absoluteFill} onPress={stop} accessibilityLabel="Stop the summary" /> : null}
             <Pressable
               onPress={onGem}
@@ -166,22 +193,23 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
                 />
               ) : null}
             </View>
-            <View style={[styles.status, { top: height * 0.795 }]} pointerEvents="box-none">
+            <View style={[styles.status, { bottom: single ? insets.bottom + 12 + singleH + 10 : insets.bottom + 14 + 52 + 10 }]} pointerEvents="box-none">
               <StatusBlock
                 label={label}
                 color={labelColor}
-                headline={single ? '' : headline}
+                headline={headline}
+                compact={!!single}
                 calm={!walking && mood === 'calm'}
                 more={!walking && st.needs.length > 1 ? copy.more(st.needs.length - 1) : undefined}
                 onMore={() => st.openSheet('needs')}
               />
             </View>
             {single ? (
-              <View style={[styles.single, { bottom: insets.bottom + 12 }]}>
+              <View style={[styles.single, { bottom: insets.bottom + 12 }]} onLayout={(e) => setSingleH(e.nativeEvent.layout.height)}>
                 <SwipeCard item={single} onDone={st.resolve} onLater={st.snooze} />
               </View>
             ) : (
-              <View style={[styles.bottomBar, { bottom: insets.bottom + 14 }]} pointerEvents="box-none">
+              <View style={[styles.bottomBar, { bottom: insets.bottom + 14, opacity: st.sheet === 'chat' ? 0 : 1 }]} pointerEvents="box-none">
                 <AskBar placeholder={copy.askPlaceholder} onPress={() => st.openChat('home')} onMic={listen} listening={listening} style={styles.ask} />
                 <SummaryButton
                   mode={st.summaryMode}

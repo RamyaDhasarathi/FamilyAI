@@ -56,6 +56,8 @@ interface State {
   /** Text to send as soon as the chat opens ("Ask about this", voice). */
   chatPending: string | null;
   walk: Walk;
+  /** Dev-only commands for Home (navigation/devLinks.ts). */
+  devCommand: { id: number; cmd: Record<string, string> } | null;
 
   boot(): Promise<void>;
   setScenario(s: Scenario): Promise<void>;
@@ -77,6 +79,7 @@ interface State {
   undo(entryId: string): void;
   setWalk(w: Partial<Walk>): void;
   setLowPower(v: boolean): void;
+  setDevCommand(cmd: Record<string, string>): void;
   logIn(email: string, password: string): Promise<boolean>;
   logOut(): Promise<void>;
 }
@@ -103,6 +106,7 @@ export const useFamilyOS = create<State>((set, get) => ({
   chatThread: 'home',
   chatPending: null,
   walk: { active: false, index: 0, steps: [], speak: false },
+  devCommand: null,
 
   async boot() {
     const [profile, family, home, today, needs] = await Promise.all([
@@ -223,6 +227,10 @@ export const useFamilyOS = create<State>((set, get) => ({
 
   setLowPower(v) {
     set({ lowPower: v });
+  },
+
+  setDevCommand(cmd) {
+    set({ devCommand: { id: Date.now(), cmd } });
   },
 
   async logIn(email, password) {

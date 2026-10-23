@@ -1,9 +1,11 @@
 // Mobile-only navigator. Native stack → iOS edge-swipe back and Android
 // hardware back for free (AGENT.md §8.7, §11.1).
-import { DarkTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import { useRef } from 'react';
+import { DarkTheme, NavigationContainer, type NavigationContainerRef, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { colors } from '../theme/tokens';
 import type { RootStackParamList } from './types';
+import { useDevLinks } from './devLinks';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { HomeOrbitScreen } from '../screens/HomeOrbitScreen';
@@ -20,8 +22,10 @@ const theme: Theme = {
 };
 
 export function FamilyOSNavigator() {
+  const nav = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  useDevLinks(nav);
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer theme={theme} ref={nav}>
       <Stack.Navigator
         initialRouteName="Loading"
         screenOptions={{

@@ -1,8 +1,7 @@
 // Settings, restyled (AGENT.md §8.8). Includes the dev-only "Demo scenario" row (§6.2).
 import { StyleSheet, Switch, View } from 'react-native';
 import { copy } from '../mocks/data';
-import { SCENARIOS } from '../theme/stateThemes';
-import { scenarioThemes } from '../theme/stateThemes';
+import { SCENARIOS, scenarioThemes } from '../theme/stateThemes';
 import { colors, radii } from '../theme/tokens';
 import { type as T } from '../theme/typography';
 import { useFamilyOS } from '../store/useFamilyOS';

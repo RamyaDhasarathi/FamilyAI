@@ -35,7 +35,7 @@ export function gemHome(f: Frame) {
 /** Mini gem above the Dashboard sheet. */
 export function gemDash(f: Frame) {
   'worklet';
-  return { x: f.W * 0.5, y: f.top + f.W * 0.12, r: f.W * 0.085 };
+  return { x: f.W * 0.5, y: Math.max(f.top + f.W * 0.1, f.H * 0.125), r: f.W * 0.085 };
 }
 
 /** Gem centre and radius for a dashboard progress t ∈ [0, 1]. */

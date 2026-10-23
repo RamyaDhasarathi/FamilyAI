@@ -30,11 +30,11 @@ export function Pressy({ style, children, silent, pressScale = press.scale, onPr
       hitSlop={6}
       style={[style, anim]}
       onPressIn={(e) => {
-        p.value = withSpring(1, springs.snappy);
+        p.set(withSpring(1, springs.snappy));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        p.value = withSpring(0, springs.snappy);
+        p.set(withSpring(0, springs.snappy));
         onPressOut?.(e);
       }}
       onPress={(e) => {

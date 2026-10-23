@@ -24,8 +24,8 @@ export function LoadingScreen({ navigation }: ScreenProps<'Loading'>) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    spin.value = withRepeat(withTiming(1, { duration: 6000, easing: Easing.linear }), -1);
-    progress.value = withTiming(1, { duration: DURATION, easing: Easing.inOut(Easing.cubic) });
+    spin.set(withRepeat(withTiming(1, { duration: 6000, easing: Easing.linear }), -1));
+    progress.set(withTiming(1, { duration: DURATION, easing: Easing.inOut(Easing.cubic) }));
     const t0 = Date.now();
     const tick = setInterval(() => {
       const k = Math.min(1, (Date.now() - t0) / DURATION);

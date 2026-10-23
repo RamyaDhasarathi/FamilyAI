@@ -49,25 +49,25 @@ export function SwipeCard({ item, onDone, onLater, width }: Props) {
     setTimeout(() => (kind === 'done' ? onDone(item.id) : onLater(item.id)), 650);
   };
   const fling = (dir: 1 | -1) => {
-    tx.value = withTiming(dir * W * 1.15, { duration: 240, easing: Easing.out(Easing.cubic) }, () =>
+    tx.set(withTiming(dir * W * 1.15, { duration: 240, easing: Easing.out(Easing.cubic) }, () =>
       scheduleOnRN(finish, dir === 1 ? 'done' : 'later')
-    );
+    ));
   };
 
   const pan = Gesture.Pan()
     .activeOffsetX([-12, 12])
     .failOffsetY([-14, 14])
     .onUpdate((e) => {
-      tx.value = e.translationX;
+      tx.set(e.translationX);
     })
     .onEnd((e) => {
       const projected = e.translationX + e.velocityX * 0.08;
       if (projected > W * 0.35) {
-        tx.value = withTiming(W * 1.15, { duration: 200 }, () => scheduleOnRN(finish, 'done'));
+        tx.set(withTiming(W * 1.15, { duration: 200 }, () => scheduleOnRN(finish, 'done')));
       } else if (projected < -W * 0.35) {
-        tx.value = withTiming(-W * 1.15, { duration: 200 }, () => scheduleOnRN(finish, 'later'));
+        tx.set(withTiming(-W * 1.15, { duration: 200 }, () => scheduleOnRN(finish, 'later')));
       } else {
-        tx.value = withSpring(0, springs.snappy);
+        tx.set(withSpring(0, springs.snappy));
       }
     });
 
