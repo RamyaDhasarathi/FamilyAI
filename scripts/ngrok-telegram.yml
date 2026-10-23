@@ -1,0 +1,13 @@
+# The tunnel exists for exactly one path.
+#
+# Without this, an ngrok tunnel to the dev server publishes the whole API to
+# the internet -- including POST /v1/households, which takes no auth and would
+# let anyone who finds the URL create households in the dev database. Telegram
+# only ever needs the webhook, so nothing else is served.
+on_http_request:
+  - expressions:
+      - "req.url.path != '/v1/inbound/telegram'"
+    actions:
+      - type: deny
+        config:
+          status_code: 404

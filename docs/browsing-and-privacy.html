@@ -1,0 +1,100 @@
+<title>Browsing and Privacy</title>
+<style>
+/* Layout: one reading column, a custody drawing in the middle, two reference tables; the walls as a quiet band. */
+:root{--bg:#f6f4ef;--fg:#1f1d1a;--fg2:#4f4a43;--fg3:#7d766d;--line:#dcd6cc;--card:#fffdf9;--accent:#b5472b;--accent-soft:rgba(181,71,43,.12);--tint:#ece7dd;--mono:"SF Mono",Menlo,Consolas,monospace;--serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#161512;--fg:#ece8e0;--fg2:#bdb6aa;--fg3:#8a8378;--line:#332f29;--card:#1e1c18;--accent:#e0805f;--accent-soft:rgba(224,128,95,.16);--tint:#24211c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#161512;--fg:#ece8e0;--fg2:#bdb6aa;--fg3:#8a8378;--line:#332f29;--card:#1e1c18;--accent:#e0805f;--accent-soft:rgba(224,128,95,.16);--tint:#24211c;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.55;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-block:40px 64px;padding-inline:16px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(30px,5vw,42px);line-height:1.1;margin:8px 0 12px;text-wrap:balance}
+h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:44px 0 10px;text-wrap:balance}
+p{margin:0 0 12px;max-width:66ch}
+.lead{font-size:18px;color:var(--fg2);max-width:62ch}
+.walls{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 6px}
+.wall{border:1px solid var(--accent);color:var(--fg);background:var(--accent-soft);border-radius:999px;padding:6px 12px;font-size:13px}
+code{font-family:var(--mono);font-size:.86em;background:var(--tint);padding:1px 5px;border-radius:4px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:14px 0 18px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);font-weight:500}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+ul{padding-left:20px;max-width:66ch}li{margin:6px 0}
+.fig{margin:18px 0 20px}.fig svg{width:100%;height:auto;display:block}
+.cap{font-size:13px;color:var(--fg3);margin-top:6px}
+.note{border-left:3px solid var(--accent);padding:4px 0 4px 14px;color:var(--fg2);margin:16px 0}
+.foot{margin-top:48px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--fg3)}
+@media (max-width:480px){table{min-width:560px}}
+</style>
+<div class="wrap">
+<div class="eyebrow">FamilyOS · read from the code on 10 Oct 2026</div>
+<h1>How FamilyOS touches the web, and what stays private</h1>
+<p class="lead">Four ways FamilyOS reaches a website, two ways a phone hands a notice in, and the encryption under all of it.</p>
+<div class="walls"><span class="wall">Never holds a card, a UPI PIN or a bank login, and never pays</span><span class="wall">A person approves every date, task and errand</span><span class="wall">Every read, write and run is in the audit</span></div>
+
+<h2>1. Reading the public web with no credential</h2>
+<p>A fee schedule, a public booking page or a URL someone shared is read once, on request, never signed in. The reader (<code>execution/disposable.py</code>) fetches the page with plain HTTP and receives no credential of any kind: no cookie jar, no token, no household key. It cannot authenticate even if a page tries to talk it into it, so a page that argues is a bad claim rather than a leak.</p>
+<p>JavaScript pages that hand a plain fetch an empty shell go through a research provider instead (<code>research.py</code>, Parallel, off unless configured). The query is built from a plan option's own words and scrubbed of every member's name before it leaves. The reader announces itself in its user agent.</p>
+<p>What comes back is evidence, never fact: the URL it landed on, the page hashed, the time it was read. It is shown with its source and never becomes a claim or an obligation on its own.</p>
+
+<h2>2. Acting on a site the family is signed in to</h2>
+<p>An errand runs only after a guardian approves the exact request by its fingerprint. The sign-in gets in through a sitting: a watched browser on the sign-in page, where the person signs in themselves. FamilyOS never sees the password and never re-authenticates on its own. At the end of the sitting only that site's origins are read out and sealed under the household key as a sealed session; the seal binds the household and the service into the ciphertext.</p>
+<p>Whatever decides what to do holds a capability: a name, a service and the origins it may reach, with no cookie or token in it. Only the driver, the code that steers the browser, is lent the session, and only for one task. The browser for that task is thrown away afterwards.</p>
+<figure class="fig">
+<svg viewBox="0 0 760 396" role="img" aria-label="Only the driver ever holds a session, and only for one task" font-size="13" font-family="-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--fg3)"/></marker></defs>
+<text x="24" y="34" font-size="15" font-weight="600" fill="var(--fg)">Only the driver ever holds a session, and only for one task</text>
+<g fill="none" stroke="var(--fg3)" stroke-width="1.25"><path d="M200 96H224" marker-end="url(#arr)"/><path d="M440 96H464" marker-end="url(#arr)"/><path d="M552 132V152H490V172" marker-end="url(#arr)"/><path d="M300 216H380" marker-end="url(#arr)"/><path d="M490 244V272H124V300" marker-end="url(#arr)"/><path d="M490 244V272H380V300" marker-end="url(#arr)"/><path d="M490 244V272H636V300" marker-end="url(#arr)"/></g>
+<g><rect x="24" y="60" width="176" height="72" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="112" y="84" text-anchor="middle" font-weight="600" fill="var(--fg)">Sitting</text><text x="112" y="100" text-anchor="middle" font-size="11.5" fill="var(--fg2)">the person signs in</text><text x="112" y="116" text-anchor="middle" font-size="11.5" fill="var(--fg2)">FamilyOS never sees it</text></g>
+<g><rect x="224" y="60" width="216" height="72" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="332" y="84" text-anchor="middle" font-weight="600" fill="var(--fg)">Sealed session</text><text x="332" y="100" text-anchor="middle" font-size="11.5" fill="var(--fg2)">that site's origins only</text><text x="332" y="116" text-anchor="middle" font-size="11.5" fill="var(--fg2)">under the household key</text></g>
+<g><rect x="464" y="60" width="176" height="72" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="552" y="84" text-anchor="middle" font-weight="600" fill="var(--fg)">Lease</text><text x="552" y="100" text-anchor="middle" font-size="11.5" fill="var(--fg2)">one task, then wiped</text><text x="552" y="116" text-anchor="middle" font-size="11.5" fill="var(--fg2)">never re-authenticates</text></g>
+<g><rect x="24" y="172" width="276" height="88" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="162" y="196" text-anchor="middle" font-weight="600" fill="var(--fg)">Decides what to do</text><text x="162" y="212" text-anchor="middle" font-size="11.5" fill="var(--fg2)">runbook, generalist, or a person</text><text x="162" y="228" text-anchor="middle" font-size="11.5" fill="var(--fg2)">holds a capability: service, origins</text><text x="162" y="244" text-anchor="middle" font-size="11.5" fill="var(--fg2)">no cookie, no token, no key</text></g>
+<text x="340" y="206" text-anchor="middle" font-size="11.5" fill="var(--fg2)">asks the next step</text>
+<g><rect x="380" y="172" width="220" height="72" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="490" y="196" text-anchor="middle" font-weight="600" fill="var(--fg)">Driver</text><text x="490" y="212" text-anchor="middle" font-size="11.5" fill="var(--fg2)">steers the browser</text><text x="490" y="228" text-anchor="middle" font-size="11.5" fill="var(--fg2)">lent the session for one task</text></g>
+<g><rect x="24" y="300" width="200" height="72" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="124" y="324" text-anchor="middle" font-weight="600" fill="var(--fg)">Steel</text><text x="124" y="340" text-anchor="middle" font-size="11.5" fill="var(--fg2)">rented container</text><text x="124" y="356" text-anchor="middle" font-size="11.5" fill="var(--fg2)">one session, released after</text></g>
+<g><rect x="280" y="300" width="200" height="72" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="380" y="324" text-anchor="middle" font-weight="600" fill="var(--fg)">Chromium</text><text x="380" y="340" text-anchor="middle" font-size="11.5" fill="var(--fg2)">on the family's Mac</text><text x="380" y="356" text-anchor="middle" font-size="11.5" fill="var(--fg2)">profile discarded at release</text></g>
+<g><rect x="536" y="300" width="200" height="72" rx="8" fill="var(--card)" stroke="var(--fg3)" stroke-width="1.25"/><text x="636" y="324" text-anchor="middle" font-weight="600" fill="var(--fg)">WebKit</text><text x="636" y="340" text-anchor="middle" font-size="11.5" fill="var(--fg2)">the phone's own web view</text><text x="636" y="356" text-anchor="middle" font-size="11.5" fill="var(--fg2)">cookies stay on the phone</text></g>
+</svg>
+<figcaption class="cap">The decider on the left never touches the session; the driver is lent it for one task and the browser beneath is thrown away after.</figcaption>
+</figure>
+<div class="tbl"><table><thead><tr><th>Browser</th><th>Where it runs</th><th>When</th><th>What it holds</th></tr></thead><tbody>
+<tr><td>Steel</td><td>A rented container, Apache-2.0 and self-hostable</td><td>A hosted deployment with no phone open</td><td>A session for one task, released after; a live view the member can watch and take over</td></tr>
+<tr><td>Chromium</td><td>Playwright's Chromium on the machine FamilyOS runs on</td><td>Today, on the family's Mac: their own address, no bill per run, nothing leaves the house</td><td>One browser process per session, its own profile, discarded at release; a sitting opens a visible window</td></tr>
+<tr><td>WebKit</td><td>The app's web view on the phone, while "Run on this phone" is held open</td><td>Attended runs with the family's own sign-ins and address</td><td>The phone's own cookies; nothing sealed or uploaded; a needs_you is the same screen, touched</td></tr>
+</tbody></table></div>
+<p>The phone has a fourth pair of hands for apps with no web page at all: a test runner on a paired phone reads the school's app through its accessibility tree and hands the words in as a private notice. When a run needs a person, the console's live view is relayed by the server frame for frame, nothing read or kept on the way, and since 10 Oct the asker is told at once on Telegram with the link to take over.</p>
+<p>Every browser appends one token to its real user agent, <code>FamilyOS/0.2 (+household agent; each run approved by a guardian; never pays)</code>, never in place of it, so the string tells one story and a site can tell a household's agent from a person. Signed requests (Web Bot Auth, RFC 9421) need a stable HTTPS origin for the key directory; a domain in front of a static host or Tailscale Funnel gives that.</p>
+<div class="note">A runbook never lets a model read the page; it may answer one closed question over a short list the code extracted. The generalist, the fallback for a site with no runbook, is the exception: the model sees the page through Anthropic's browser toolset, inside the site's own hosts and a confirmation gate that refuses any click that would pay, order or confirm. It is skipped when the household runs local models.</div>
+
+<h2>3. The share sheet and Shortcuts</h2>
+<p>Most of a family's notices live where no API reaches: a WhatsApp group, a school app, a screenshot, a forwarded PDF. The share sheet is the one door every app on the phone already has, which is why those notices reach FamilyOS at all.</p>
+<ul>
+<li><b>The share extension.</b> From any app's share sheet, "Send to FamilyOS" takes the photo, PDF, page or text, lets the person tag a child and choose private or shared, and posts the raw bytes with the app's device token. Offline, it waits in an outbox.</li>
+<li><b>The Shortcut.</b> A phone without the app does the same request from a Shortcut with a device token pasted once. On iOS 27 the Notification trigger can run it when a named app posts an alert, so a school app's notice shares itself.</li>
+<li><b>App Intents.</b> "Ask FamilyOS", "What's on today" and "Share with FamilyOS" as Siri phrases and Shortcuts actions.</li>
+</ul>
+<p>The server treats a share as the plainest rail: the phone says nothing about where it came from, so the bytes are private to the member who shared them unless they chose shared; duplicates are dropped by hash; a child tag is accepted only when a guardian has recorded consent; a bare URL is read once as a public page. Everything is sealed before it is stored and read by the same reader as mail. A device token is shown once, never expires on its own, and is revocable from the Household card without signing the app out.</p>
+
+<h2>4. Encryption, and what it covers</h2>
+<p><b>Originals are sealed per household; derived facts rely on database controls.</b> That is the one-line statement, and the rest is detail.</p>
+<p><b>Keys.</b> A master key in the environment wraps each household's 256-bit key, which wraps a key per blob. Originals are sealed with AES-GCM before they reach the object store, under opaque ids rather than filenames or hashes, so the store learns nothing about the content.</p>
+<div class="tbl"><table><thead><tr><th>Sealed under the household key</th><th>Plain rows, by design</th></tr></thead><tbody>
+<tr><td style="white-space:normal;font-weight:400">Every original: mail bodies, PDFs, images, harvested page text. The Gmail refresh token. Browser session state from a sitting. Biller consumer numbers are not stored at all, only an HMAC. Session tokens, sign-in links, device tokens and founding tickets are hashed.</td><td>Claims, obligations, who a notice is about, the sender and subject, members and households. The brief, the inbox and Money are queries over them and could not sort or group over ciphertext. They rely on disk encryption, one database role per deployment, no shared credentials and an append-only audit.</td></tr>
+</tbody></table></div>
+<p><b>Erasure.</b> Destroying a household's wrapped key is the first step: from that moment every copy of its originals, in backups or a lagging replica, and every sealed session, is unreadable. Withdrawing a child's consent erases what names them in the same transaction.</p>
+<p><b>Projection, not twin.</b> Every fact on a screen is derived from a notice and points back to it. There is no separate memory to leak, drift or outlive an erasure.</p>
+
+<h2>5. The same rails, seen as privacy</h2>
+<div class="tbl"><table><thead><tr><th>Rail</th><th>What leaves the family</th><th>What a model sees</th><th>What is kept</th></tr></thead><tbody>
+<tr><td>Public read</td><td>A plan option's own words, scrubbed of names; a URL</td><td>Nothing from the page as fact</td><td>The page hashed, as evidence</td></tr>
+<tr><td>Runbook, signed in</td><td>The leased session, into one throwaway browser, for one task</td><td>At most one closed question over a short list</td><td>Steps with pictures on the errand; the sealed session</td></tr>
+<tr><td>Generalist</td><td>Page views of the site's own hosts, to Anthropic</td><td>The page, behind a gate that never pays</td><td>The same step log; skipped when local models are on</td></tr>
+<tr><td>Steel</td><td>The leased session, into a rented container; released after</td><td>As above</td><td>Nothing between sessions</td></tr>
+<tr><td>Local Chromium</td><td>Nothing leaves the house</td><td>As above</td><td>A profile per session, discarded</td></tr>
+<tr><td>Phone web view</td><td>Nothing: the page renders on the phone</td><td>Only the questions a runbook asks</td><td>The phone's own cookies, on the phone</td></tr>
+<tr><td>Share sheet, Shortcut</td><td>The bytes, over the household's own server address</td><td>The reader: rules, a local model, or an opt-in remote one</td><td>Sealed original; private to the sharer unless shared</td></tr>
+<tr><td>Phone app driver</td><td>The screen's words, as a private notice</td><td>The reader</td><td>Sealed original</td></tr>
+</tbody></table></div>
+<div class="foot">Written from the code in the FamilyOS repository on 10 Oct 2026. The whole system in one animated picture: the architecture page.</div>
+</div>

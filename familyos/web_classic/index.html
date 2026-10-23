@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FamilyOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Fragment+Mono&display=swap">
+<link rel="stylesheet" href="app.css">
+<script>
+/* Before the stylesheet paints, or a light-theme viewer sees a dark flash on
+   every load. Dark is the default, so only a stored "light" does anything.
+   Wrapped because localStorage throws in a private window, and a theme is not
+   worth failing a page load over. */
+try {
+  if (localStorage.getItem('familyos.theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+} catch (e) { /* default stands */ }
+</script>
+</head>
+<body>
+<div id="root" class="boot">Loading&hellip;</div>
+<script src="app.js"></script>
+</body>
+</html>

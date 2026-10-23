@@ -1,0 +1,108 @@
+name: FamilyOS
+options:
+  bundleIdPrefix: com.arunmozhi
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "2"
+    TARGETED_DEVICE_FAMILY: "1"
+    # Set your team here or in Xcode's Signing tab to run on a phone.
+    DEVELOPMENT_TEAM: LP455UPHKV   # the personal team the profiles were issued to; xcodegen regenerate used to wipe it
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    # Debug builds link the code as a side dylib, and the App Intents metadata
+    # extractor then finds no intents in the stub binary; keep one binary.
+    ENABLE_DEBUG_DYLIB: NO
+targets:
+  FamilyOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: FamilyOS
+      - path: Kit
+    preBuildScripts:
+      - name: Stamp the build
+        # The commit and the time, shown on Settings so a phone can say
+        # which build it runs. Writes one generated file, declared below.
+        script: |
+          cd "$SRCROOT"
+          HASH=$(git -C .. rev-parse --short HEAD 2>/dev/null || echo unknown)
+          DIRTY=$(git -C .. status --porcelain --untracked-files=no -- . ':!ios/FamilyOS/Generated' 2>/dev/null | grep -q . && echo "+" || echo "")
+          WHEN=$(date "+%-d %b %H:%M")
+          cat > FamilyOS/Generated/BuildInfo.swift <<SWIFT
+          // Written by the build (project.yml, preBuildScripts); the committed copy is a placeholder.
+          enum BuildInfo {
+              static let commit = "$HASH$DIRTY"
+              static let builtAt = "$WHEN"
+          }
+          SWIFT
+        outputFiles:
+          - $(SRCROOT)/FamilyOS/Generated/BuildInfo.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arunmozhi.familyos
+        INFOPLIST_FILE: FamilyOS/Info.plist
+        CODE_SIGN_ENTITLEMENTS: FamilyOS/FamilyOS.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: FamilyOSShare
+      - target: FamilyOSLive
+      - sdk: AppIntents.framework
+      - sdk: ActivityKit.framework
+  FamilyOSShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShareExtension
+      - path: Kit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arunmozhi.familyos.share
+        INFOPLIST_FILE: ShareExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/FamilyOSShare.entitlements
+  FamilyOSLive:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: LiveActivity
+      - path: Kit/ErrandActivity.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arunmozhi.familyos.live
+        INFOPLIST_FILE: LiveActivity/Info.plist
+        SKIP_INSTALL: YES
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: ActivityKit.framework
+  FamilyOSDriver:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Driver
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arunmozhi.familyos.driver
+        INFOPLIST_FILE: Driver/Info.plist
+        TEST_TARGET_NAME: FamilyOS
+    dependencies:
+      - target: FamilyOS
+schemes:
+  FamilyOSDriver:
+    build:
+      targets:
+        FamilyOSDriver: all
+    test:
+      targets:
+        - FamilyOSDriver
+  FamilyOS:
+    build:
+      targets:
+        FamilyOS: all
+    run:
+      config: Debug
