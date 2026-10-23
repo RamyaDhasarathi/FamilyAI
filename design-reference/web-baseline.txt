@@ -1,0 +1,21 @@
+# Web baseline — recorded 2026-10-23 11:37 IST on a clean checkout of main@76a84f8, before any mobile work.
+# Command (from repo root): RUFF=<ruff 0.17.2> sh design-reference/web-check.sh
+# pytest needs Postgres + tesseract (scripts/test.sh, CI); not provisioned locally, so it is not in the local baseline.
+# The 1 ruff finding below pre-exists in the provided code; it is the baseline, not a regression.
+
+## 1. ruff check .
+tests/test_offers.py:98:5: F841 Local variable `household_id` is assigned to but never used
+summary: Found 1 error.
+
+## 2. node --check on every web JS file
+ok   familyos/web/app.js
+ok   familyos/web_classic/app.js
+ok   familyos/web_guide/guide.js
+ok   familyos/web_orbit/avatar.js
+ok   familyos/web_orbit/data.js
+ok   familyos/web_orbit/icons.js
+ok   familyos/web_orbit/orbit.js
+
+## 3. sha256 of every tracked file outside mobile/ and design-reference/
+e50df61ec152efad2fb4ec25baf9fa1ea41e4f103e2aa9f29284888e85b0220c
+files: 374
