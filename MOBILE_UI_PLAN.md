@@ -121,3 +121,58 @@ The video is the source of truth (AGENT.md rule 3):
 - [x] Phase 3 — signature graphics (crystal, dust shader, satellites, particle morph, charts)
 - [x] Phase 4 — screens and flows (Home → Ask/Summary → Today → Needs-you → Profile → Chat → Dashboard → Agents → restyled screens)
 - [x] Phase 5 — verification (web untouched, builds, screenshots vs. video, flows, perf) + `MOBILE_UI_REPORT.md`
+
+---
+
+# Task 2 — Interactive core + family members (`AGENT_CORE_AND_FAMILY.md`)
+
+Branch `feat/core-gestures-and-family`, created from `feat/stone-design-v2` (the current, refreshed stones).
+
+## Findings (Phase 0)
+
+- **Names differ from the file:** `GlassCard`/`GlassPill` → `Glass` + `PillButton`/`ClosePill`; the "bottom-sheet setup" →
+  `ModalCard` (keyboard-aware glass sheet; `@gorhom/bottom-sheet` was never used); `ParticleField` → the dust in
+  `ambientShader.ts`; `Crystal` → `drawStone()` (`stoneStyle.ts` → `crystalRenderV2.ts`); `SwipeCard`, `Toast`,
+  `SectionLabel` exist as named.
+- **Crystal rotation today:** angles `rotY`/`tiltX` computed per frame in `OrbitScene`; faces projected and shaded in
+  the renderer worklet. Tap on the core currently starts the summary walkthrough (Pressable over the gem); the Home
+  swipe-up is a `Gesture.Pan` on the whole overlay.
+- **Family today:** a read-only `FamilyScreen` (5 members: Michael 42, Sarah 40, Ethan 16, Mia 11, Linda 68) using
+  `avatarForAge()` and the stage GIF/PNG pairs in `assets/familyos/avatars/{anim,still}`. The Profile menu's "Family
+  members" row opens it.
+- **Libraries:** none of async-storage, secure-store, datetimepicker, image-picker or document-picker were installed;
+  all five are now installed at SDK 58 versions (all run in Expo Go).
+- **"Scrollbar" on Home (§2 polish):** Home has no scroll container. The bar at the top-right edge on the Xiaomi is
+  MIUI's Security Center sidebar handle, a system overlay (`com.miui.securitycenter/.FloatingWindow`,
+  frame x 992–1080, y 156–464). It also shows over the launcher. Nothing to change in the app.
+
+## Decisions
+
+- **Rotation:** orientation becomes a quaternion shared value; idle spin is a per-frame quaternion step about the tilted
+  axis, flicks add an angular-velocity vector, and the renderer receives a 3×3 matrix. The jelly ripple, squash/stretch
+  and rotation are drawn by the v2 renderer. With `STONE_STYLE = 'v1'` the core still squashes and rotates by the old
+  angles but shows no ripple (v1's file stays unchanged).
+- **Gestures:** a circular `GestureDetector` over the crystal with `Race(pan, Exclusive(longPress, tap))`; the crystal
+  gesture `blocksExternalGesture(swipeUp)` so pans that start on the crystal never open the Dashboard.
+- **Seed:** the existing seed already has 5 members with ages, so it is kept (Michael, Sarah, Ethan, Mia, Linda), with
+  the mixed statuses from §4.3 (Sarah banking, Ethan IDs, Linda IDs + banking).
+- **Region:** `region` in `mocks/data.ts`; `'US'` because the mock currency is `$`.
+- **Profile menu chip:** the number of members with at least one section needing an update.
+- **Storage:** the family service persists members to AsyncStorage and the ID, health and banking section data to
+  SecureStore (`member_<id>_<section>`), so the store and screens only see the service.
+
+## Files
+
+- Touch: `graphics/{sceneState,OrbitScene,crystalRenderV2,ambientShader,MiniGem,orbitLayout}`, `screens/{HomeOrbitScreen,
+  SatelliteLayer,ProfileMenu,SettingsScreen}`, `components/Toast`, `navigation/*`, `services/interfaces`, `mocks/data`,
+  `graphics/avatars`, `store/useFamilyOS`.
+- New: `graphics/coreMotion.ts`, `screens/CoreGestureLayer.tsx`, `family/` (model, validation, fields, wizard
+  sections), `mocks/familyService.ts`, `mocks/familySeed.ts`, `store/useFamily.ts`, `screens/family/*` (hub, orbit
+  header, member card, profile, add/edit sheet, wizard, remove dialog).
+
+## Phases
+
+- [x] Phase 0 — read the code, libraries, this section
+- [ ] Part A — jelly tap and finger rotation (`feat(core): …`)
+- [ ] Part B — data model, storage, service · hub + profile · add/edit + wizard · remove + undo
+- [ ] Verification on the Xiaomi and the iOS simulator + report section

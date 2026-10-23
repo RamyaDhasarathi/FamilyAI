@@ -47,7 +47,17 @@
         }
       ],
       "expo-screen-orientation",
-      "./plugins/withLtrOnly"
+      "./plugins/withLtrOnly",
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FamilyOS uses your photos to set a family member's profile picture.",
+          "cameraPermission": "FamilyOS uses the camera to take a family member's profile picture.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }
