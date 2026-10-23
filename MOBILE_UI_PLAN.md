@@ -41,7 +41,7 @@ and work on `feat/mobile-familyos-ui`.
 | ffmpeg | Homebrew | for frame extraction |
 | JDK | OpenJDK 17 (Homebrew) | Android Studio's bundled JBR is 25; RN's Gradle wants 17 |
 | Android SDK | platforms 35–37, build-tools 36/37, NDK 27/28 | already installed |
-| adb | 37.0.1 | **crashes on macOS 27 with the default USB backend**; run with `ADB_LIBUSB=0` |
+| adb | 37.0.1 → **35.0.2** | 37.0.1 crashes on macOS 27 (libunwind) and drops the phone; r35.0.2 with `ADB_LIBUSB=0` is stable |
 | Xcode | 27.1 | iOS simulator: iPhone 18 Pro |
 
 ## 4. Dependencies (mobile/ only, SDK-matched via `npx expo install`)
@@ -52,8 +52,8 @@ and work on `feat/mobile-familyos-ui`.
 | Animation | react-native-reanimated + react-native-worklets | 4.7.1 + 0.13.0 (worklets Babel plugin added automatically by babel-preset-expo) |
 | Gestures | react-native-gesture-handler | 3.3.x (legacy `Gesture.*` builders still accepted by `GestureDetector`) |
 | GPU graphics | @shopify/react-native-skia | 2.14.0 |
-| Bottom sheet | @gorhom/bottom-sheet | 5.2.14 |
-| Blur / gradients | expo-blur / expo-linear-gradient | 58.x |
+| Bottom sheet | ~~@gorhom/bottom-sheet~~ | removed — see §5 |
+| Blur / gradients | ~~expo-blur~~ / expo-linear-gradient | blur removed — see §5; gradients 58.x |
 | Vector / icons | react-native-svg / lucide-react-native | 15.16.0 / 1.61 |
 | Haptics / speech | expo-haptics / expo-speech | 58.x |
 | Fonts | @expo-google-fonts/inter + expo-font | Inter 400/500/600/700 |
@@ -65,18 +65,23 @@ and work on `feat/mobile-familyos-ui`.
 ## 5. Rendering approach (decisions)
 
 - **Crystal core:** a real low-poly polyhedron (Fibonacci-sphere points with radius jitter, convex hull, about
-  180 faces). It is rotated, culled, depth-sorted and shaded per frame in a worklet, then drawn with **one
-  `drawVertices` call** for the faces plus one `drawPoints(Lines)` call for the facet edges. The video shows a
-  translucent gem whose back edges are visible through it, so back-face edges are drawn faintly first.
-  Shading follows `familyos_3d.py`: cosine-palette `irid()`, key and fill Lambert lights, Fresnel rim, Blinn sparkle.
+  130 faces). It is rotated, culled and shaded per frame in a worklet, with shading that follows
+  `familyos_3d.py`: cosine-palette `irid()`, key and fill Lambert lights, Fresnel rim and Blinn sparkle.
+  *Revised after profiling on the Xiaomi:* the front faces are **one `drawVertices` call** whose facet edges come
+  from barycentric texture coordinates plus a tiny SkSL shader (no stroked paths, which cost ~10 ms a frame).
+  The far wall of the glass is a single gradient-filled path.
+- **Satellites and the particle morph** are cached `SkPicture`s, re-recorded a few per frame (round-robin).
 - **Dust halo, star field, background glow:** one **SkSL runtime shader** with procedural, cell-hashed particles.
   Thousands of particles cost no per-frame JS. (`MakeVertices` converts every point and colour through JSI, which
   is fine for the gem's ~1.5k vertices but not for 900 dust quads.)
 - **Particle morph:** about 1,200 CPU particles, drawn with `drawPoints` in a few alpha buckets. Icon targets are
   sampled once at start-up from SVG paths (`path.contains` plus `ContourMeasure`).
-- **Sheets:** modal glass cards (Today, Needs-you, Chat, Profile) are custom Reanimated components, because they are
-  floating cards with a `Close` pill rather than edge-attached sheets. The Dashboard uses `@gorhom/bottom-sheet`,
-  whose `animatedPosition` drives the gem shrinking to the mini gem.
+- **Sheets:** all custom Reanimated + Gesture Handler components, so `@gorhom/bottom-sheet` was removed. The modal
+  cards (Today, Needs-you, Chat, Profile) are floating cards with a `Close` pill rather than edge-attached sheets,
+  and the Dashboard is driven by the same shared value (`scene.dashT`) that shrinks the gem into the mini gem, so
+  the finger, the sheet and the gem move as one.
+- **Frosted glass:** the live Home scene is blurred by Skia under any open sheet, with translucent tinted fills
+  and 1 px borders on top. This looks the same on iOS and Android, so `expo-blur` was removed.
 
 ## 6. Screen mapping
 
@@ -111,8 +116,8 @@ The video is the source of truth (AGENT.md rule 3):
 ## 8. Phase checklist
 
 - [x] Phase 0 — recon, toolchain, frames, baseline, this plan
-- [ ] Phase 1 — dependencies + smoke test on the Xiaomi (Android) and iOS simulator
-- [ ] Phase 2 — design system (tokens, scenario themes, typography, motion, glass components)
-- [ ] Phase 3 — signature graphics (crystal, dust shader, satellites, particle morph, charts)
-- [ ] Phase 4 — screens and flows (Home → Ask/Summary → Today → Needs-you → Profile → Chat → Dashboard → Agents → restyled screens)
-- [ ] Phase 5 — verification (web untouched, builds, screenshots vs. video, flows, perf) + `MOBILE_UI_REPORT.md`
+- [x] Phase 1 — dependencies + smoke test on the Xiaomi (Android) and iOS simulator
+- [x] Phase 2 — design system (tokens, scenario themes, typography, motion, glass components)
+- [x] Phase 3 — signature graphics (crystal, dust shader, satellites, particle morph, charts)
+- [x] Phase 4 — screens and flows (Home → Ask/Summary → Today → Needs-you → Profile → Chat → Dashboard → Agents → restyled screens)
+- [x] Phase 5 — verification (web untouched, builds, screenshots vs. video, flows, perf) + `MOBILE_UI_REPORT.md`
