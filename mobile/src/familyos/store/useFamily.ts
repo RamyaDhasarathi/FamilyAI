@@ -17,6 +17,8 @@ interface PendingRemoval {
   /** Index in the sorted list, so Undo can restore it to the same place. */
   index: number;
   timer: ReturnType<typeof setTimeout>;
+  /** The soft delete; Undo waits for it so a restore can't land first. */
+  deleting: Promise<void>;
 }
 
 interface FamilyState {
@@ -33,7 +35,7 @@ interface FamilyState {
   updateBasics(id: string, patch: Partial<MemberBasics>): Promise<FamilyMember>;
   saveSection(id: string, section: SectionId, data: Record<string, unknown>, status: SectionStatus): Promise<FamilyMember>;
   /**
-   * Remove with Undo. `reassign` applies first when the member pays children's
+   * Remove with Undo. `reassign` also applies when the member pays children's
    * allowances: another adult's id, or null for "Decide later".
    */
   remove(id: string, reassign?: string | null): Promise<void>;
@@ -100,31 +102,37 @@ export const useFamily = create<FamilyState>((set, get) => ({
       toast("You can't remove the account owner.");
       return;
     }
-    // Children whose allowance this member paid: move to another adult, or
-    // mark their payments section "needs update" (Decide later).
-    if (reassign !== undefined) {
-      for (const child of dependentsOf(list, id)) {
-        const data = { ...child.sections.banking.data, paidFrom: reassign ?? undefined };
-        const status: SectionStatus = reassign ? child.sections.banking.status : 'needsUpdate';
-        const updated = await familyService.updateSection(child.id, 'banking', data, status);
-        set({ members: replace(get().members, updated) });
-      }
-    }
-    const index = get().members.findIndex((x) => x.id === id);
+    // The card dissolves and the Undo toast shows straight away; the writes
+    // follow in the background.
+    const index = list.findIndex((x) => x.id === id);
+    const deleting = familyService.deleteMember(id);
     set({ removing: [...get().removing, id] });
-    await familyService.deleteMember(id);
-    // Let the card dissolve before it leaves the list.
     setTimeout(() => {
-      set({ members: get().members.filter((x) => x.id !== id), removing: get().removing.filter((x) => x !== id) });
+      // Skip the list removal if Undo already brought them back.
+      const still = !!get().pending[id];
+      set({ members: still ? get().members.filter((x) => x.id !== id) : get().members, removing: get().removing.filter((x) => x !== id) });
     }, 520);
     const timer = setTimeout(() => {
       const p = { ...get().pending };
       delete p[id];
       set({ pending: p });
-      void familyService.purgeMember(id);
+      void deleting.then(() => familyService.purgeMember(id));
     }, UNDO_MS);
-    set({ pending: { ...get().pending, [id]: { member: m, index, timer } } });
+    set({ pending: { ...get().pending, [id]: { member: m, index, timer, deleting } } });
     toast(`${displayName(m)} removed`, { duration: UNDO_MS, action: { label: 'Undo', onPress: () => void get().undo(id) } });
+    // Children whose allowance this member paid: move to another adult, or
+    // mark their payments section "needs update" (Decide later).
+    if (reassign !== undefined) {
+      await Promise.all(
+        dependentsOf(list, id).map(async (child) => {
+          const data = { ...child.sections.banking.data, paidFrom: reassign ?? undefined };
+          const status: SectionStatus = reassign ? child.sections.banking.status : 'needsUpdate';
+          const updated = await familyService.updateSection(child.id, 'banking', data, status);
+          set({ members: replace(get().members, updated) });
+        })
+      );
+    }
+    await deleting;
   },
 
   async undo(id) {
@@ -134,6 +142,7 @@ export const useFamily = create<FamilyState>((set, get) => ({
     const rest = { ...get().pending };
     delete rest[id];
     set({ pending: rest });
+    await p.deleting;
     const m = await familyService.restoreMember(id);
     set({ members: sortMembers([...get().members.filter((x) => x.id !== id), m]), highlight: m.id });
   },
