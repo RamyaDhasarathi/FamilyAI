@@ -8,6 +8,7 @@
 //   familyos://dev?home=1                     back to Home, sheets closed
 //   familyos://dev?mode=listen|read           summary button mode
 //   familyos://dev?screen=Settings|Family|Login|Loading
+//   familyos://dev?member=<id> | wizard=<id>&section=basic|…|review | addMember=1 | resetFamily=1
 //   familyos://dev?perf=1                     log UI-thread frame stats (300 frames)
 //   familyos://dev?dbg=1|2|4                  profiling: skip shader | satellites | core (bitmask)
 //   familyos://dev?low=1|0                    force low-power graphics on/off
@@ -18,6 +19,8 @@ import type { RootStackParamList } from './types';
 import { AGENT_IDS, type AgentId } from '../theme/tokens';
 import { SCENARIOS, type Scenario } from '../theme/stateThemes';
 import { useFamilyOS } from '../store/useFamilyOS';
+import { useFamily } from '../store/useFamily';
+import type { SectionId } from '../services/interfaces';
 
 function parse(url: string): Record<string, string> {
   const q = url.split('?')[1] ?? '';
@@ -48,6 +51,10 @@ export function useDevLinks(nav: React.RefObject<NavigationContainerRef<RootStac
       if (p.screen === 'Settings' || p.screen === 'Family' || p.screen === 'Login' || p.screen === 'Loading') {
         nav.current?.navigate(p.screen);
       }
+      if (p.member) nav.current?.navigate('MemberProfile', { id: p.member });
+      if (p.wizard) nav.current?.navigate('MemberWizard', { id: p.wizard, section: (p.section as SectionId | 'review') ?? 'basic' });
+      if (p.addMember) nav.current?.navigate('Family', { openAdd: true });
+      if (p.resetFamily) await useFamily.getState().reset();
       if (p.sheet === 'chat') st.openChat(p.thread ?? 'home');
       else if (p.sheet === 'today' || p.sheet === 'needs' || p.sheet === 'profile') st.openSheet(p.sheet);
       const cmd: Record<string, string> = {};

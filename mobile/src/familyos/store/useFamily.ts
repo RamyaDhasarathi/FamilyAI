@@ -131,7 +131,7 @@ export const useFamily = create<FamilyState>((set, get) => ({
   async reset() {
     for (const p of Object.values(get().pending)) clearTimeout(p.timer);
     const members = await familyService.resetDemoFamily();
-    set({ members, pending: {}, removing: [], highlight: null });
+    set({ members, loaded: true, pending: {}, removing: [], highlight: null });
     useFamilyOS.getState().toast('Demo family restored');
   },
 

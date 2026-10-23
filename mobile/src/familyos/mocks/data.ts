@@ -112,6 +112,7 @@ export const copy = {
   },
   profileMenu: {
     rows: ['Profile', 'Family members', 'Agents and permissions', 'Notifications', 'Privacy and data'],
+    addMember: 'Add family member',
     summaryButton: 'Summary button',
     settings: 'Settings',
     help: 'Help and feedback',
@@ -122,6 +123,8 @@ export const copy = {
     title: 'Settings',
     demoScenario: 'Demo scenario',
     demoHint: 'Dev builds only. Long-press the date on Home to cycle.',
+    resetFamily: 'Reset demo family',
+    resetFamilyHint: 'Restores the five sample members and clears details saved on this device.',
     reduceGraphics: 'Low-power graphics',
     reduceGraphicsHint: 'Fewer facets and particles. Turned on automatically on slow devices.',
     spoken: 'Spoken summary',

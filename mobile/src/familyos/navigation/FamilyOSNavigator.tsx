@@ -11,7 +11,9 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { HomeOrbitScreen } from '../screens/HomeOrbitScreen';
 import { AgentDetailScreen } from '../screens/AgentDetailScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { FamilyScreen } from '../screens/FamilyScreen';
+import { FamilyHubScreen } from '../screens/family/FamilyHubScreen';
+import { MemberProfileScreen } from '../screens/family/MemberProfileScreen';
+import { MemberWizardScreen } from '../screens/family/MemberWizardScreen';
 import { PlaceholderScreen } from '../screens/PlaceholderScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -45,7 +47,13 @@ export function FamilyOSNavigator() {
           options={({ route }) => ({ animation: route.params.via === 'reveal' ? 'fade' : 'slide_from_right' })}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="Family" component={FamilyScreen} />
+        <Stack.Screen name="Family" component={FamilyHubScreen} />
+        <Stack.Screen name="MemberProfile" component={MemberProfileScreen} />
+        <Stack.Screen
+          name="MemberWizard"
+          component={MemberWizardScreen}
+          options={{ presentation: 'transparentModal', animation: 'slide_from_bottom', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}
+        />
         <Stack.Screen name="Placeholder" component={PlaceholderScreen} />
       </Stack.Navigator>
     </NavigationContainer>

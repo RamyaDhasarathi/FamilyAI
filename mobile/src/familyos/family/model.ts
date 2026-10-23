@@ -93,6 +93,16 @@ export function ageOf(dateOfBirth: string, now = new Date()): number {
   return Math.max(0, age);
 }
 
+/** Age for meta lines: babies read "Under 1" rather than "0". */
+export function ageText(age: number): string {
+  return age < 1 ? 'Under 1' : String(age);
+}
+
+/** "Under 1 year" / "1 year" / "N years". */
+export function yearsText(age: number): string {
+  return age < 1 ? 'Under 1 year' : age === 1 ? '1 year' : `${age} years`;
+}
+
 export function ageGroupOf(age: number): AgeGroup {
   if (age < 13) return 'child';
   if (age < 18) return 'teen';
@@ -125,6 +135,17 @@ export function completeCount(m: FamilyMember): number {
 
 export function sectionsNeedingUpdate(m: FamilyMember): SectionId[] {
   return SECTION_IDS.filter((s) => m.sections[s].status === 'needsUpdate');
+}
+
+export function sectionsNotStarted(m: FamilyMember): SectionId[] {
+  return SECTION_IDS.filter((s) => m.sections[s].status === 'notStarted');
+}
+
+/** Short card / summary wording for the sections still to do. */
+export function todoText(needs: number, notStarted: number): string | null {
+  if (needs) return `${needs} ${needs === 1 ? 'section' : 'sections'} to update`;
+  if (notStarted) return `${notStarted} ${notStarted === 1 ? 'section' : 'sections'} not started`;
+  return null;
 }
 
 export function emptySections(status: SectionStatus = 'notStarted'): FamilyMember['sections'] {

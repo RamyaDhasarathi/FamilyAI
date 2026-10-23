@@ -5,6 +5,7 @@ import { SCENARIOS, scenarioThemes } from '../theme/stateThemes';
 import { colors, radii } from '../theme/tokens';
 import { type as T } from '../theme/typography';
 import { useFamilyOS } from '../store/useFamilyOS';
+import { useFamily } from '../store/useFamily';
 import type { ScreenProps } from '../navigation/types';
 import { AppText } from '../components/AppText';
 import { SectionLabel, Dot } from '../components/Labels';
@@ -17,6 +18,7 @@ function Card({ children }: { children: React.ReactNode }) {
 
 export function SettingsScreen({ navigation }: ScreenProps<'Settings'>) {
   const st = useFamilyOS();
+  const resetFamily = useFamily((x) => x.reset);
   const s = copy.settings;
   return (
     <ScreenShell title={s.title} onBack={() => navigation.goBack()}>
@@ -73,6 +75,17 @@ export function SettingsScreen({ navigation }: ScreenProps<'Settings'>) {
                 })}
               </View>
             </View>
+            <Pressy
+              onPress={() => void resetFamily()}
+              pressScale={0.99}
+              style={[styles.row, styles.divider]}
+              accessibilityLabel={s.resetFamily}
+            >
+              <View style={styles.flex}>
+                <AppText style={T.menu}>{s.resetFamily}</AppText>
+                <AppText style={[T.small, styles.hint]}>{s.resetFamilyHint}</AppText>
+              </View>
+            </Pressy>
           </Card>
         </>
       ) : null}

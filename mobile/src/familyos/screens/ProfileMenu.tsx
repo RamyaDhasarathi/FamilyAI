@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { scheduleOnRN } from 'react-native-worklets';
 import { copy } from '../mocks/data';
 import { useFamilyOS } from '../store/useFamilyOS';
+import { useFamily, useNeedsUpdateCount } from '../store/useFamily';
 import { colors, radii } from '../theme/tokens';
 import { springs } from '../theme/motion';
 import { type as T } from '../theme/typography';
@@ -15,7 +16,7 @@ import { Glass } from '../components/Glass';
 import { ClosePill } from '../components/Pills';
 import { Pressy } from '../components/Pressy';
 
-export type MenuTarget = 'Profile' | 'Family' | 'Settings' | 'Login' | { placeholder: string };
+export type MenuTarget = 'Profile' | 'Family' | 'AddMember' | 'Settings' | 'Login' | { placeholder: string };
 
 interface Props {
   visible: boolean;
@@ -38,6 +39,12 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
   const profile = useFamilyOS((s) => s.profile);
   const mode = useFamilyOS((s) => s.summaryMode);
   const toggle = useFamilyOS((s) => s.toggleSummaryMode);
+  const needsUpdate = useNeedsUpdateCount();
+  const loadFamily = useFamily((s) => s.load);
+  const familyLoaded = useFamily((s) => s.loaded);
+  useEffect(() => {
+    if (visible && !familyLoaded) void loadFamily();
+  }, [visible, familyLoaded, loadFamily]);
   const [mounted, setMounted] = useState(visible);
   const p = useSharedValue(0);
   if (visible && !mounted) setMounted(true);
@@ -72,6 +79,7 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
   const rows: [string, MenuTarget][] = [
     [copy.profileMenu.rows[0], { placeholder: copy.profileMenu.rows[0] }],
     [copy.profileMenu.rows[1], 'Family'],
+    [copy.profileMenu.addMember, 'AddMember'],
     [copy.profileMenu.rows[2], { placeholder: copy.profileMenu.rows[2] }],
     [copy.profileMenu.rows[3], { placeholder: copy.profileMenu.rows[3] }],
     [copy.profileMenu.rows[4], { placeholder: copy.profileMenu.rows[4] }],
@@ -96,7 +104,18 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
             <ClosePill onPress={onClose} />
           </View>
           {rows.map(([label, target]) => (
-            <Row key={label} label={label} onPress={() => onNavigate(target)} />
+            <Row
+              key={label}
+              label={label}
+              onPress={() => onNavigate(target)}
+              right={
+                target === 'Family' && needsUpdate > 0 ? (
+                  <View style={styles.countChip} accessibilityLabel={`${needsUpdate} ${needsUpdate === 1 ? 'member needs' : 'members need'} details updated`}>
+                    <AppText style={[T.chip, styles.countText]}>{needsUpdate}</AppText>
+                  </View>
+                ) : undefined
+              }
+            />
           ))}
           <Row
             label={copy.profileMenu.summaryButton}
@@ -133,6 +152,8 @@ const styles = StyleSheet.create({
   },
   headText: { flex: 1, marginLeft: 10 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, height: 44 },
+  countChip: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: 'rgba(255,178,63,0.2)', borderWidth: 1, borderColor: 'rgba(255,178,63,0.6)', alignItems: 'center', justifyContent: 'center' },
+  countText: { color: '#FFB23F', fontSize: 11 },
   chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: colors.pillSecondaryBg, borderWidth: 1, borderColor: colors.glassBorder },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.divider, marginHorizontal: 18, marginVertical: 6 },
 });

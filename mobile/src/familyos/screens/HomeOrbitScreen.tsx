@@ -145,6 +145,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
     if (typeof t === 'object') navigation.navigate('Placeholder', { title: t.placeholder });
     else if (t === 'Login') navigation.navigate('Login');
     else if (t === 'Profile') navigation.navigate('Placeholder', { title: 'Profile' });
+    else if (t === 'AddMember') navigation.navigate('Family', { openAdd: true });
     else navigation.navigate(t);
   };
   const onLogout = async () => {
