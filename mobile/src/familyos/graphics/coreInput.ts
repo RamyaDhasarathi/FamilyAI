@@ -35,19 +35,18 @@ export function queueTap(scene: OrbitScene, x: number, y: number) {
   }, false);
 }
 
-/** Tap at canvas point (sx, sy): dent + ripple, squash, halo pulse, dust puff (§3.3). */
-export function jellyAt(scene: OrbitScene, frame: Frame, sx: number, sy: number, reduced: boolean) {
+/** The jelly for a crystal centred at (gx, gy) with radius R (Home core, Family header).
+ *  Declared before jellyAt: a worklet captures what it calls when the module
+ *  loads, so a callee declared later would be undefined on the UI thread. */
+export function jellyAtGem(scene: OrbitScene, gx: number, gy: number, R: number, sx: number, sy: number, reduced: boolean) {
   'worklet';
-  // No jelly while the crystal is broken into an agent icon.
-  if (scene.morphAlpha.get() > 0.01 || scene.explode.get() > 0.01) return;
   if (reduced) {
     // Reduce Motion: a gentle 0.96 pulse only.
     scene.corePulse.set(withSequence(withTiming(0.96, { duration: 90 }), withTiming(1, { duration: 220 })));
     return;
   }
-  const g = gemAt(frame, scene.dashT.get());
-  const R = g.r * (0.85 + 0.15 * scene.intro.get());
-  const hit = hitCrystal(sx, sy, g.x, g.y, R, qToMat(scene.orient.get()));
+  const g = { x: gx, y: gy };
+  const hit = hitCrystal(sx, sy, gx, gy, R, qToMat(scene.orient.get()));
   // Keep at most 3 ripples; each starts at the current scene clock.
   const rp = scene.ripples.get();
   const next = rp.length >= 12 ? rp.slice(4) : rp.slice();
@@ -65,6 +64,15 @@ export function jellyAt(scene: OrbitScene, frame: Frame, sx: number, sy: number,
   scene.dustPushDir.set([dx / dl, dy / dl]);
   scene.dustPush.set(10);
   scene.dustPush.set(withSpring(0, { damping: 9, stiffness: 110, mass: 1 }));
+}
+
+/** Tap at canvas point (sx, sy): dent + ripple, squash, halo pulse, dust puff (§3.3). */
+export function jellyAt(scene: OrbitScene, frame: Frame, sx: number, sy: number, reduced: boolean) {
+  'worklet';
+  // No jelly while the crystal is broken into an agent icon.
+  if (scene.morphAlpha.get() > 0.01 || scene.explode.get() > 0.01) return;
+  const g = gemAt(frame, scene.dashT.get());
+  jellyAtGem(scene, g.x, g.y, g.r * (0.85 + 0.15 * scene.intro.get()), sx, sy, reduced);
 }
 
 /** Apply queued drag and taps. Called from the frame callback, before stepCore. */
