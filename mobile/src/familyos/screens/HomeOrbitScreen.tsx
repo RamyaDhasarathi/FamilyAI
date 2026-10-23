@@ -6,7 +6,7 @@ import { BackHandler, Pressable, StyleSheet, View, useWindowDimensions } from 'r
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Keyframe, useAnimatedStyle, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import type { AgentId } from '../theme/tokens';
 import { colors } from '../theme/tokens';
@@ -35,6 +35,15 @@ import { DashboardSheet } from './DashboardSheet';
 import { AgentReveal, type Reveal } from './AgentReveal';
 import { useWalkthrough } from './useWalkthrough';
 import { useCelebration, useListening, useScenarioSync } from './useHomeEffects';
+
+// App open (AGENT.md §9): text rises 8 px and fades in after the gem.
+const riseIn = (delay: number) =>
+  new Keyframe({
+    0: { opacity: 0, transform: [{ translateY: 8 }] },
+    100: { opacity: 1, transform: [{ translateY: 0 }] },
+  })
+    .duration(420)
+    .delay(delay);
 
 export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
   const { width, height } = useWindowDimensions();
@@ -185,7 +194,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
               onTap={(a) => void start(a, st.summaryMode === 'listen')}
               onLongPress={(agent, x, y) => setReveal({ agent, x, y })}
             />
-            <View style={{ paddingTop: insets.top + 8 }} pointerEvents="box-none">
+            <Animated.View entering={riseIn(350)} style={{ paddingTop: insets.top + 8 }} pointerEvents="box-none">
               {st.profile ? (
                 <HomeHeader
                   profile={st.profile}
@@ -196,8 +205,12 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
                   onDateLongPress={__DEV__ ? st.cycleScenario : undefined}
                 />
               ) : null}
-            </View>
-            <View style={[styles.status, { bottom: single ? insets.bottom + 12 + singleH + 10 : insets.bottom + 14 + 52 + 10 }]} pointerEvents="box-none">
+            </Animated.View>
+            <Animated.View
+              entering={riseIn(500)}
+              style={[styles.status, { bottom: single ? insets.bottom + 12 + singleH + 10 : insets.bottom + 14 + 52 + 10 }]}
+              pointerEvents="box-none"
+            >
               <StatusBlock
                 label={label}
                 color={labelColor}
@@ -207,7 +220,7 @@ export function HomeOrbitScreen({ navigation }: ScreenProps<'Home'>) {
                 more={!walking && st.needs.length > 1 ? copy.more(st.needs.length - 1) : undefined}
                 onMore={() => st.openSheet('needs')}
               />
-            </View>
+            </Animated.View>
             {single ? (
               <View style={[styles.single, { bottom: insets.bottom + 12 }]} onLayout={(e) => setSingleH(e.nativeEvent.layout.height)}>
                 <SwipeCard item={single} onDone={st.resolve} onLater={st.snooze} />

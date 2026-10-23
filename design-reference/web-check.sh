@@ -21,5 +21,7 @@ done
 
 echo
 echo "## 3. sha256 of every tracked file outside mobile/ and design-reference/"
-git ls-files | grep -vE '^(mobile|design-reference)/' | tr '\n' '\0' | xargs -0 shasum -a 256 | shasum -a 256 | cut -c1-64
-echo "files: $(git ls-files | grep -vE '^(mobile|design-reference)/' | wc -l | tr -d ' ')"
+# The two root reports AGENT.md requires (MOBILE_UI_PLAN.md / MOBILE_UI_REPORT.md) are new files, not web code.
+EXCL='^(mobile|design-reference)/|^MOBILE_UI_(PLAN|REPORT)\.md$'
+git ls-files | grep -vE "$EXCL" | tr '\n' '\0' | xargs -0 shasum -a 256 | shasum -a 256 | cut -c1-64
+echo "files: $(git ls-files | grep -vE "$EXCL" | wc -l | tr -d ' ')"
