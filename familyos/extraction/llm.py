@@ -151,6 +151,34 @@ def build_request(doc: ParsedDocument, reference_date: dt.date | None, *, model:
     }
 
 
+def anthropic_headers() -> dict | None:
+    """The workspace header an organisation-level key needs on every request
+    (FAMILYOS_ANTHROPIC_WORKSPACE_ID); none for a workspace-scoped key."""
+    from familyos.settings import settings
+    workspace = settings.anthropic_workspace_id.strip()
+    return {"anthropic-workspace-id": workspace} if workspace else None
+
+
+def schema_in_prompt(system: str, schema: dict) -> str:
+    """The schema, written into the instructions. A server of one's own may
+    accept response_format and not enforce it (mlx_lm.server does not), and
+    the extraction prompt never names the fields itself, so the model is told
+    the shape in words as well."""
+    return (system + "\n\nAnswer with one JSON object and nothing else -- no prose, no code fence -- matching this JSON"
+            " Schema exactly (every property listed in required is present; null where it does not apply):\n"
+            + json.dumps(schema, separators=(",", ":")))
+
+
+def loads_answer(text: str) -> dict:
+    """json.loads, forgiving the code fence a model of one's own sometimes
+    wraps its answer in."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+        text = text.rsplit("```", 1)[0]
+    return json.loads(text)
+
+
 def split_model(model: str) -> tuple[str, str]:
     """("openai", "gpt-5.6-sol") from "openai/gpt-5.6-sol"; bare names by their family."""
     provider, sep, name = model.partition("/")
@@ -192,7 +220,7 @@ class ClaudeExtractor(ModelExtractor):
     def _get_client(self):
         if self._client is None:
             import anthropic
-            self._client = anthropic.AsyncAnthropic(api_key=self._api_key, max_retries=3)
+            self._client = anthropic.AsyncAnthropic(api_key=self._api_key, max_retries=3, default_headers=anthropic_headers())
         return self._client
 
     async def call(self, doc: ParsedDocument, reference_date: dt.date | None, country: str | None = None) -> dict:
@@ -231,6 +259,7 @@ class OpenAIExtractor(ModelExtractor):
         if self._base_url:
             # A model of one's own is paid for in seconds, not cents: a
             # pretty-printed answer doubles the tokens for nothing.
+            system = schema_in_prompt(system, OUTPUT_SCHEMA)
             system += "\nWrite the JSON compactly, on one line, with no indentation or line breaks."
         kwargs = {
             "model": split_model(self.model)[1],
@@ -280,6 +309,6 @@ class OpenAIExtractor(ModelExtractor):
             raise RuntimeError("the model's answer was cut off")
         if not text.strip():
             raise RuntimeError("the model returned no answer")
-        return {"answer": json.loads(text), "model": f"openai/{model}",
+        return {"answer": loads_answer(text), "model": f"openai/{model}",
                 "usage": {"input_tokens": getattr(usage, "prompt_tokens", None),
                           "output_tokens": getattr(usage, "completion_tokens", None)}}

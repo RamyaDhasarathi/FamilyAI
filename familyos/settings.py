@@ -198,6 +198,10 @@ class Settings(BaseSettings):
     local_model_context: int = 32768       # the model's window, so an answer is asked to fit beside the notice
     anthropic_api_key: str = Field(default="", repr=False,
                                    validation_alias=AliasChoices("FAMILYOS_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"))
+    # A key made at the organisation rather than inside a workspace is refused
+    # unless each request names the workspace it bills to (wrkspc_...). Empty
+    # for a workspace-scoped key, which needs nothing.
+    anthropic_workspace_id: str = ""
     openai_api_key: str = Field(default="", repr=False,
                                 validation_alias=AliasChoices("FAMILYOS_OPENAI_API_KEY", "OPENAI_API_KEY"))
 

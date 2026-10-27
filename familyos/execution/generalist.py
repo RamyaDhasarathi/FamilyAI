@@ -510,7 +510,9 @@ PageFactory = Callable[[str, dict | None], object]
 
 def _real_runner(model: str, toolset: SteelToolset, system: str, task: str):
     import anthropic
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, max_retries=2)
+
+    from familyos.extraction.llm import anthropic_headers
+    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, max_retries=2, default_headers=anthropic_headers())
     return client.beta.messages.tool_runner(model=model, max_tokens=4000, system=system, tools=[toolset],
                                             messages=[{"role": "user", "content": task}], max_iterations=MAX_TURNS)
 
