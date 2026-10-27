@@ -37,8 +37,14 @@ import asyncio
 import json
 import logging
 import os
-import resource
 import sys
+
+try:
+    import resource
+except ImportError:
+    resource = None  # type: ignore[assignment]  # Windows does not provide the resource module
+
+
 
 from familyos.extraction.parse import Page, ParsedDocument, Word, parse
 from familyos.settings import settings
@@ -60,6 +66,8 @@ class ParseFailed(RuntimeError):
 
 def _limits(memory_mb: int, cpu_seconds: int) -> None:
     """Applied in the child before it imports a parser or reads a byte."""
+    if resource is None:
+        return
     soft = memory_mb * 1024 * 1024
     for what, limit in (
         (resource.RLIMIT_AS, soft),          # address space

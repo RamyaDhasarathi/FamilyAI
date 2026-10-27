@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="FAMILYOS_", env_file=".env", extra="ignore")
 
     database_url: str = "postgresql://postgres:postgres@localhost:5432/familyos"
+    auto_migrate: bool = True
 
     # Wraps every household's data key. 32 bytes, base64. Rotating it means
     # re-wrapping the household keys, never re-encrypting the blobs.

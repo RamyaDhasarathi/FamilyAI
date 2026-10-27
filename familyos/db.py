@@ -52,8 +52,20 @@ async def migrate(p: asyncpg.Pool | None = None) -> list[str]:
     async with p.acquire() as conn:
         await conn.execute("SELECT pg_advisory_lock($1)", _LOCK_KEY)
         try:
-            await conn.execute(
-                "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+            has_table = await conn.fetchval(
+                "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'schema_migrations')"
+            )
+            if not has_table:
+                has_app_tables = await conn.fetchval(
+                    "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'households')"
+                )
+                if has_app_tables:
+                    return []
+                try:
+                    await conn.execute(
+                        "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+                except asyncpg.exceptions.InsufficientPrivilegeError:
+                    return []
             done = {r["version"] for r in await conn.fetch("SELECT version FROM schema_migrations")}
             for path in sorted(MIGRATIONS.glob("*.sql")):
                 if path.stem in done:

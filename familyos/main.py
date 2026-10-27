@@ -63,7 +63,8 @@ def register_job_handlers() -> None:
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await db.connect()
-    await db.migrate()
+    if settings.auto_migrate:
+        await db.migrate()
     register_job_handlers()
     steel.configure()
     chat.configure()
