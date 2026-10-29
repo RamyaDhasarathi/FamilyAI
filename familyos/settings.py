@@ -224,6 +224,17 @@ class Settings(BaseSettings):
     # and every message waits in quarantine for a guardian.
     inbound_authserv_id: str = ""
 
+    # Apply familyos/migrations at startup. Off for a database whose schema
+    # someone else manages and this role may not alter (no CREATE): the app
+    # then trusts the tables are already there.
+    auto_migrate: bool = True
+    # Development sign-in: POST /v1/sign-in/dev signs a member in by email
+    # alone, through the same link-and-redeem path the mailed link takes, for
+    # a deployment with no mail server yet. Anyone who can reach the server
+    # can then sign in as anyone whose address they know: never on where the
+    # server is reachable by people who are not its developers.
+    dev_sign_in: bool = False
+
     # Durable jobs (familyos/jobs.py, from Orbit).
     jobs_enabled: bool = True
     job_lease_seconds: float = 60.0
@@ -299,6 +310,10 @@ class Settings(BaseSettings):
     voice_cloud_model: str = "whisper-1"
     anthropic_api_key: str = Field(default="", repr=False,
                                    validation_alias=AliasChoices("FAMILYOS_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"))
+    # A key made at the organisation rather than inside a workspace is refused
+    # unless each request names the workspace it bills to (wrkspc_...). Empty
+    # for a workspace-scoped key, which needs nothing.
+    anthropic_workspace_id: str = ""
     openai_api_key: str = Field(default="", repr=False,
                                 validation_alias=AliasChoices("FAMILYOS_OPENAI_API_KEY", "OPENAI_API_KEY"))
 
