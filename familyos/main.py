@@ -120,7 +120,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     crypto.check_master_key()
     check_single_worker(os.environ.get("WEB_CONCURRENCY", "1"))
     await db.connect()
-    await db.migrate()
+    if settings.auto_migrate:
+        await db.migrate()
+    else:
+        logger.warning("FAMILYOS_AUTO_MIGRATE=false: no migrations applied; the schema is assumed to be in place")
+    if settings.dev_sign_in:
+        logger.warning("FAMILYOS_DEV_SIGN_IN is ON: POST /v1/sign-in/dev signs anyone in by email alone. Development only.")
     register_job_handlers()
     steel.configure()
     if whatsapp_reader.configure() and not whatsapp_reader.runs_here():
