@@ -37,6 +37,18 @@ class MemberBirthday(BaseModel):
     date_of_birth: date | None = None
 
 
+class MemberUpdate(BaseModel):
+    """Change a member's name, contact or role. Only the fields sent change;
+    null clears email or phone. School and class have their own route, which
+    keeps their history; date of birth too."""
+    display_name: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=24)
+    # Between adult and child only, as a birthday crosses eighteen. Nobody is
+    # made or unmade a guardian here.
+    role: Literal["adult", "child"] | None = None
+
+
 class School(BaseModel):
     id: uuid.UUID
     name: str

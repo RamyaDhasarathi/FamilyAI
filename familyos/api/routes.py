@@ -225,6 +225,7 @@ from familyos.models import (
     MemberLocaleIn,
     MemberMedicalIn,
     MemberSchool,
+    MemberUpdate,
     MemoryCorrectIn,
     MemoryVerifyIn,
     ModelRoutingIn,
@@ -1771,6 +1772,23 @@ async def set_household_place(key: str, body: PlaceIn, p: Principal = Depends(cu
     except identity.NotAllowed as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     return Rules(**await rules.list_for(p))
+
+
+@router.patch("/members/{member_id}", response_model=Member, tags=["household"],
+              description="Change a member's name, email, phone or role (adult and child only). Only the fields sent "
+                          "change; null clears email or phone. A guardian edits anyone, anyone else only their own "
+                          "name and contact. School, class and birthday have their own routes.")
+async def update_member(member_id: uuid.UUID, body: MemberUpdate, p: Principal = Depends(current_member)):
+    return _member(await identity.update_member(p, member_id, body))
+
+
+@router.delete("/members/{member_id}", status_code=204, tags=["household"],
+               description="Remove a member for good, with what is theirs: sessions, reminders, mailboxes, what was "
+                           "proposed about them, and the regular payments, purchase requests and bill splits they created. "
+                           "Guardians only, never themselves. No undo.")
+async def remove_member(member_id: uuid.UUID, p: Principal = Depends(current_member)):
+    await identity.remove_member(p, member_id)
+    return Response(status_code=204)
 
 
 @router.patch("/members/{member_id}/birthday", response_model=Member, tags=["household"],

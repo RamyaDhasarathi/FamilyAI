@@ -26,7 +26,7 @@ import asyncpg
 from familyos import audit, clock, crypto
 from familyos.db import pool
 from familyos.intake.whatsapp import normalise_phone
-from familyos.models import HouseholdIn, MemberIn
+from familyos.models import HouseholdIn, MemberIn, MemberUpdate
 from familyos.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -572,6 +572,92 @@ async def set_birthday(actor: Principal, member_id: uuid.UUID, date_of_birth: dt
         await audit.record(actor.household_id, "member.birthday_set", actor_member_id=actor.member_id, target_type="member",
                            target_id=member_id, detail={"set": date_of_birth is not None}, conn=conn)
     return dict(row)
+
+
+async def update_member(actor: Principal, member_id: uuid.UUID, data: MemberUpdate) -> dict:
+    """Change a member's name, email, phone or role, only the fields sent.
+    A guardian edits anyone; anyone else only their own name and contact.
+    A role moves between adult and child alone: as it does, what the other
+    kind may not hold is cleared (a child has no email, phone or circle role;
+    an adult no school or class), so the row stays one the schema accepts."""
+    sent = data.model_fields_set
+    if not sent:
+        raise Invalid("nothing to change")
+    if not actor.is_guardian and (actor.member_id != member_id or "role" in sent):
+        raise NotAllowed("only a guardian can change another member's details or anyone's role")
+    async with pool().acquire() as conn, conn.transaction():
+        before = await conn.fetchrow("SELECT * FROM members WHERE id = $1 AND household_id = $2 FOR UPDATE",
+                                     member_id, actor.household_id)
+        if before is None:
+            raise NotFound("member")
+        role = before["role"]
+        if "role" in sent and data.role != role:
+            if role == "guardian":
+                raise Invalid("a guardian's role is not changed here")
+            if member_id == actor.member_id:
+                raise Invalid("you cannot change your own role")
+            role = data.role
+        email = before["email"] if "email" not in sent else (str(data.email).lower() if data.email else None)
+        phone = before["phone"] if "phone" not in sent else normalise_phone(data.phone) if data.phone else None
+        school, class_label, circle_role = before["school"], before["class_label"], before["circle_role"]
+        if role == "child":
+            if ("email" in sent and email) or ("phone" in sent and phone):
+                raise Invalid("a child member has no email address or phone number in v1")
+            email = phone = circle_role = None
+        else:
+            school = class_label = None
+        if role == "guardian" and not email:
+            raise Invalid("a guardian needs an email address to sign in with")
+        name = data.display_name.strip() if "display_name" in sent and data.display_name else before["display_name"]
+        try:
+            row = await conn.fetchrow(
+                "UPDATE members SET display_name = $3, role = $4, email = $5, phone = $6, school = $7, class_label = $8, "
+                "school_id = CASE WHEN $4 = 'child' THEN school_id END, circle_role = $9 "
+                "WHERE id = $1 AND household_id = $2 RETURNING *",
+                member_id, actor.household_id, name, role, email, phone, school, class_label, circle_role)
+        except asyncpg.UniqueViolationError as exc:
+            raise Invalid("a member with this email or phone number already exists in the household") from exc
+        # Which fields changed, never their values.
+        changed = sorted(f for f in ("display_name", "role", "email", "phone", "school", "class_label", "circle_role")
+                         if row[f] != before[f])
+        await audit.record(actor.household_id, "member.updated", actor_member_id=actor.member_id, target_type="member",
+                           target_id=member_id, detail={"fields": changed}, conn=conn)
+    return dict(row)
+
+
+async def remove_member(actor: Principal, member_id: uuid.UUID) -> None:
+    """Remove a member for good, with everything that is theirs: their
+    sessions, reminders, connected mailboxes, what was proposed about them,
+    their passkey-held share of the family key, and the household records
+    they created (regular payments, purchase requests, bill splits). What
+    they decided or wrote for the household otherwise stays, without their
+    name on it. Guardians only, never themselves. A linked WhatsApp browser
+    profile goes first, as erasure does. Refused while it would leave the
+    family key with fewer passkey-held shares than it needs to open."""
+    if not actor.is_guardian:
+        raise NotAllowed("only a guardian can remove a member")
+    if member_id == actor.member_id:
+        raise Invalid("you cannot remove yourself")
+    role = await pool().fetchval("SELECT role FROM members WHERE id = $1 AND household_id = $2",
+                                 member_id, actor.household_id)
+    if role is None:
+        raise NotFound("member")
+    key = await pool().fetchrow(
+        "SELECT f.threshold, count(s.id) FILTER (WHERE s.revoked_at IS NULL) AS held, "
+        "count(s.id) FILTER (WHERE s.revoked_at IS NULL AND s.member_id = $2) AS theirs "
+        "FROM households h JOIN family_keys f ON f.household_id = h.id "
+        "LEFT JOIN family_key_share_seals s ON s.household_id = h.id "
+        "WHERE h.id = $1 AND h.key_mode = 'family' GROUP BY f.threshold", actor.household_id, member_id)
+    if key is not None and key["theirs"] and key["held"] - key["theirs"] < key["threshold"]:
+        raise Invalid(f"this member holds a share of the family key; without it fewer than {key['threshold']} remain to open it. "
+                      "Re-share the family key first, then remove them")
+    from familyos import erasure
+    await erasure._forget_browsers(actor.household_id, [member_id])
+    async with pool().acquire() as conn, conn.transaction():
+        if await conn.execute("DELETE FROM members WHERE id = $1 AND household_id = $2", member_id, actor.household_id) == "DELETE 0":
+            raise NotFound("member")
+        await audit.record(actor.household_id, "member.removed", actor_member_id=actor.member_id, target_type="member",
+                           target_id=member_id, detail={"role": role}, conn=conn)
 
 
 async def class_history(p: Principal, member_id: uuid.UUID) -> list[dict]:
