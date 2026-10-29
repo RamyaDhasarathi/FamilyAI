@@ -24,7 +24,7 @@ point at is not one to state.
 from __future__ import annotations
 
 import datetime as dt
-import json
+import json  # noqa: F401 - no longer used here, but the tests read chat.json
 import logging
 import re
 from dataclasses import dataclass, field
@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 from familyos import ask, clock, health, inbox, ledger, todos
 from familyos.consent import names_match
 from familyos.db import pool
+from familyos.extraction.llm import anthropic_headers, loads_answer, schema_in_prompt
 from familyos.identity import Invalid, Principal
 from familyos.settings import settings
 
@@ -137,12 +138,14 @@ OUTPUT_SCHEMA = {
                 "service": {"type": ["string", "null"]},
                 "what": {"type": ["string", "null"]},
                 "details": {"type": ["string", "null"]},
-                "part": {"type": ["string", "null"], "enum": ["morning", "afternoon", "evening", "any", None]},
+                # A nullable enum as anyOf: Anthropic's structured outputs refuse
+                # an enum beside a type list; OpenAI's strict mode takes either.
+                "part": {"anyOf": [{"type": "string", "enum": ["morning", "afternoon", "evening", "any"]}, {"type": "null"}]},
                 "max_amount": {"type": ["number", "null"]},
                 "currency": {"type": ["string", "null"]},
                 "look": {"type": ["boolean", "null"]},
                 "brief": {"type": ["string", "null"]},
-                "shape": {"type": ["string", "null"], "enum": ["trip", "meals", "other", None]},
+                "shape": {"anyOf": [{"type": "string", "enum": ["trip", "meals", "other"]}, {"type": "null"}]},
                 "notice": {"type": ["string", "null"]},
                 "obligation": {"type": ["string", "null"]},
                 "member": {"type": ["string", "null"]},
@@ -150,7 +153,7 @@ OUTPUT_SCHEMA = {
                 "due_date": {"type": ["string", "null"]},
                 "due_time": {"type": ["string", "null"]},
                 "note": {"type": ["string", "null"]},
-                "status": {"type": ["string", "null"], "enum": ["accepted", "dismissed", None]},
+                "status": {"anyOf": [{"type": "string", "enum": ["accepted", "dismissed"]}, {"type": "null"}]},
                 "bundle": {"type": ["string", "null"]},
                 "instruction": {"type": ["string", "null"]},
                 "weekday": {"type": ["integer", "null"]},
@@ -524,23 +527,28 @@ class OpenAIModel:
             self._client = openai.AsyncOpenAI(api_key=self._api_key, max_retries=2, base_url=self._base_url)
         return self._client
 
+    def _system(self, system: str, schema: dict | None) -> str:
+        """A server of one's own is told the shape in words too: it may not
+        enforce response_format."""
+        return schema_in_prompt(system, schema or OUTPUT_SCHEMA) if self._base_url else system
+
     async def reply(self, system: str, messages: list[dict], schema: dict | None = None) -> dict:
         response = await self._get_client().chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system}, *messages],
+            messages=[{"role": "system", "content": self._system(system, schema)}, *messages],
             response_format={"type": "json_schema",
                              "json_schema": {"name": "chat_turn", "schema": schema or OUTPUT_SCHEMA, "strict": True}},
             max_completion_tokens=8000)
         choice = response.choices[0]
         if getattr(choice.message, "refusal", None) or not choice.message.content:
             raise RuntimeError("the model returned no answer")
-        return json.loads(choice.message.content)
+        return loads_answer(choice.message.content)
 
     async def stream(self, system: str, messages: list[dict], schema: dict | None = None):
         """The same answer, as the text deltas the provider sends."""
         response = await self._get_client().chat.completions.create(
             model=self.model,
-            messages=[{"role": "system", "content": system}, *messages],
+            messages=[{"role": "system", "content": self._system(system, schema)}, *messages],
             response_format={"type": "json_schema",
                              "json_schema": {"name": "chat_turn", "schema": schema or OUTPUT_SCHEMA, "strict": True}},
             max_completion_tokens=8000, stream=True)
@@ -564,6 +572,29 @@ class OpenAIModel:
                 yield delta
 
 
+ANTHROPIC_MAX_UNIONS = 16      # Anthropic's structured outputs refuse a schema with more union-typed parameters
+
+
+def _unions(schema) -> int:
+    if isinstance(schema, dict):
+        own = 1 if isinstance(schema.get("type"), list) or "anyOf" in schema else 0
+        return own + sum(_unions(v) for v in schema.values())
+    if isinstance(schema, list):
+        return sum(_unions(v) for v in schema)
+    return 0
+
+
+def _anthropic_shape(system: str, schema: dict) -> dict:
+    """The system prompt and output format for one request. A schema written
+    for OpenAI's strict mode can be past what Anthropic's structured outputs
+    compile (the chat turn is: 24 nullable fields in an array of objects), so
+    that one is described in the instructions and parsed from the reply, as a
+    model of one's own is; any other is enforced."""
+    if _unions(schema) > ANTHROPIC_MAX_UNIONS:
+        return {"system": schema_in_prompt(system, schema)}
+    return {"system": system, "output_config": {"format": {"type": "json_schema", "schema": schema}}}
+
+
 class AnthropicModel:
     name = "anthropic"
 
@@ -573,22 +604,21 @@ class AnthropicModel:
     def _get_client(self):
         if self._client is None:
             import anthropic
-            self._client = anthropic.AsyncAnthropic(api_key=self._api_key, max_retries=2, base_url=self._base_url)
+            self._client = anthropic.AsyncAnthropic(api_key=self._api_key, max_retries=2, base_url=self._base_url,
+                                                  default_headers=anthropic_headers())
         return self._client
 
     async def reply(self, system: str, messages: list[dict], schema: dict | None = None) -> dict:
         message = await self._get_client().messages.create(
-            model=self.model, max_tokens=8000, system=system, messages=messages,
-            output_config={"format": {"type": "json_schema", "schema": schema or OUTPUT_SCHEMA}})
+            model=self.model, max_tokens=8000, messages=messages, **_anthropic_shape(system, schema or OUTPUT_SCHEMA))
         text = next((b.text for b in message.content if b.type == "text"), None)
         if text is None:
             raise RuntimeError("the model returned no answer")
-        return json.loads(text)
+        return loads_answer(text)
 
     async def stream(self, system: str, messages: list[dict], schema: dict | None = None):
         async with self._get_client().messages.stream(
-                model=self.model, max_tokens=8000, system=system, messages=messages,
-                output_config={"format": {"type": "json_schema", "schema": schema or OUTPUT_SCHEMA}}) as stream:
+                model=self.model, max_tokens=8000, messages=messages, **_anthropic_shape(system, schema or OUTPUT_SCHEMA)) as stream:
             async for text in stream.text_stream:
                 if text:
                     yield text
@@ -1041,7 +1071,7 @@ async def stream_turn(p: Principal, message: str, history: list[dict] | None = N
                     said = extractor.feed(delta)
                     if said:
                         yield {"type": "say", "delta": said}
-                answer = json.loads(extractor.raw)
+                answer = loads_answer(extractor.raw)
             except Exception:  # noqa: BLE001 - a provider that will not stream answers whole instead
                 if extractor.raw:
                     raise
