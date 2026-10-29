@@ -1598,6 +1598,19 @@ async def google_sign_in_callback(request: Request, state: str = "", code: str =
     return back
 
 
+@router.post("/sign-in/dev", response_model=SignedIn, status_code=200, include_in_schema=False)
+async def dev_sign_in(body: SignInRequest, request: Request, response: Response):
+    """Development only (FAMILYOS_DEV_SIGN_IN): an address alone signs in.
+    Answers 404 when off, as if it did not exist."""
+    if not settings.dev_sign_in:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    member, token = await identity.dev_sign_in(body.email)
+    if session_cookie.wants_cookie(request):
+        session_cookie.set_for(response, request, token)
+        token = None
+    return SignedIn(member=Member(**member), token=token)
+
+
 @router.post("/sign-in/redeem", response_model=SignedIn, status_code=200, tags=["household"],
              description="Spend a one-time link and receive a session token. A link works once.")
 async def redeem_sign_in(body: SignInRedeem, request: Request, response: Response):

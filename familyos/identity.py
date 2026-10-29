@@ -407,6 +407,22 @@ async def redeem(raw: str) -> tuple[dict, str]:
     return dict(member), token
 
 
+async def dev_sign_in(email: str) -> tuple[dict, str]:
+    """Sign in by address alone (FAMILYOS_DEV_SIGN_IN): issue the link the
+    mail would carry and spend it at once, so the rows written -- the link,
+    the session token, the member.signed_in audit row -- are a real sign-in's.
+    An address on several households signs in to the oldest membership."""
+    address = (email or "").strip().lower()
+    async with pool().acquire() as conn:
+        member_id = await conn.fetchval(
+            "SELECT id FROM members WHERE lower(email) = $1 AND role <> 'child' ORDER BY created_at LIMIT 1", address)
+        if member_id is None:
+            raise LinkNotUsable("no member of any household signs in with that address")
+        async with conn.transaction():
+            raw = await _issue_link(conn, member_id, purpose="sign_in")
+    return await redeem(raw)
+
+
 async def issue_founding(conn: asyncpg.Connection, email: str) -> str:
     """A ticket to found a household, for an address somebody has just proved
     they hold. One live ticket per address: asking again replaces it."""
@@ -475,8 +491,8 @@ async def add_member(actor: Principal, data: MemberIn) -> tuple[dict, str | None
         raise NotAllowed("only a guardian can add members")
     if data.role == "child" and data.email:
         raise Invalid("a child member has no email address in v1")
-    if data.role != "child" and not data.email:
-        raise Invalid("a guardian or adult member needs an email address")
+    if data.role == "guardian" and not data.email:
+        raise Invalid("a guardian needs an email address to sign in with")
     phone = normalise_phone(data.phone) if data.role != "child" else None
     if data.role == "child" and data.phone:
         raise Invalid("a child member has no phone number in v1")
@@ -493,7 +509,9 @@ async def add_member(actor: Principal, data: MemberIn) -> tuple[dict, str | None
                 _clean(data.school), _clean(data.class_label))
         except asyncpg.UniqueViolationError as exc:
             raise Invalid("a member with this email or phone number already exists in the household") from exc
-        token = await _issue_token(conn, member_id) if data.role != "child" else None
+        # An adult added without an address (a grandparent the app tracks)
+        # signs in once someone gives them one; no token until then.
+        token = await _issue_token(conn, member_id) if data.role != "child" and data.email else None
         await audit.record(actor.household_id, "member.added", actor_member_id=actor.member_id, target_type="member",
                            target_id=member_id, detail={"role": data.role}, conn=conn)
     return dict(member), token
