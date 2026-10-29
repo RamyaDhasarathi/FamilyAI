@@ -1,0 +1,866 @@
+<title>FamilyOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: a chat-first hero where a forwarded circular, or a question, ends in a decision a person makes,
+   then a real five-step sequence, a bento of every feature, and a plain list of what FamilyOS never does. */
+:root {
+  --bg: #F3F4F2; --surface: #FFFFFF; --surface2: #E9ECE8; --ink: #14161A; --ink2: #454A52; --ink3: #6C727C;
+  --line: rgba(20,22,26,.11); --accent: #C8472B; --accent-ink: #FFFFFF; --accent-soft: rgba(200,71,43,.10);
+  --good: #23764C; --good-soft: rgba(35,118,76,.12); --amber: #9A6A00; --amber-soft: rgba(154,106,0,.12);
+  --glow: rgba(200,71,43,.16); --shadow: 0 1px 2px rgba(20,22,26,.06), 0 12px 32px -12px rgba(20,22,26,.18);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Hanken Grotesk", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D0F12; --surface: #15181D; --surface2: #1D2128; --ink: #F2F3F5; --ink2: #B7BCC5; --ink3: #8A909B;
+    --line: rgba(255,255,255,.10); --accent: #FF8E6C; --accent-ink: #1A0D08; --accent-soft: rgba(255,142,108,.13);
+    --good: #6FD39B; --good-soft: rgba(111,211,155,.13); --amber: #E7B64A; --amber-soft: rgba(231,182,74,.13);
+    --glow: rgba(255,142,108,.20); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D0F12; --surface: #15181D; --surface2: #1D2128; --ink: #F2F3F5; --ink2: #B7BCC5; --ink3: #8A909B;
+  --line: rgba(255,255,255,.10); --accent: #FF8E6C; --accent-ink: #1A0D08; --accent-soft: rgba(255,142,108,.13);
+  --good: #6FD39B; --good-soft: rgba(111,211,155,.13); --amber: #E7B64A; --amber-soft: rgba(231,182,74,.13);
+  --glow: rgba(255,142,108,.20); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; }
+section { padding-block: 88px; }
+h1, h2, h3 { font-family: var(--display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.6rem, 6.2vw, 5rem); line-height: 1.02; font-weight: 800; letter-spacing: -.035em; }
+h2 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.06; font-weight: 800; letter-spacing: -.03em; }
+h3 { font-size: 1.2rem; line-height: 1.25; font-weight: 700; }
+p { margin: 0; text-wrap: pretty; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); }
+.lede { font-size: clamp(1.05rem, 1.6vw, 1.3rem); color: var(--ink2); max-width: 60ch; }
+.accent { color: var(--accent); }
+
+/* nav */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 1.15rem var(--display); letter-spacing: -.02em; text-decoration: none; }
+.mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); }
+.navlinks { display: flex; gap: 26px; font-size: .95rem; color: var(--ink2); }
+.navlinks a { text-decoration: none; padding: 8px 2px; white-space: nowrap; }
+.navlinks a:hover { color: var(--ink); }
+.navr { display: flex; align-items: center; gap: 10px; }
+.btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 22px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: 600 .98rem var(--body); text-decoration: none; cursor: pointer; transition: transform .15s ease, background .15s ease, border-color .15s ease; }
+.btn:hover { border-color: var(--ink3); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.sm { min-height: 40px; padding: 0 16px; font-size: .9rem; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.icon-btn:hover { border-color: var(--ink3); }
+
+/* hero */
+.hero { padding-top: 64px; padding-bottom: 72px; position: relative; overflow: clip; }
+.hero::before { content: ""; position: absolute; inset: -20% -10% auto -10%; height: 720px; z-index: -1;
+  background: radial-gradient(60% 60% at 70% 20%, var(--glow), transparent 70%), radial-gradient(40% 50% at 10% 0%, var(--accent-soft), transparent 70%); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+.hero h1 { margin: 18px 0 22px; }
+.hero .lede { margin-bottom: 30px; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.proof { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 34px; color: var(--ink3); font-size: .9rem; }
+.proof span { display: inline-flex; align-items: center; gap: 8px; }
+.proof i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+
+.row { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px; border-radius: 14px; background: var(--surface2); }
+.row + .row { margin-top: 8px; }
+.glyph { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.row h4 { margin: 0; font: 600 .95rem/1.3 var(--body); }
+.row .meta { font-size: .8rem; color: var(--ink3); margin-top: 2px; }
+.src { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font: 400 11px/1.3 var(--mono); color: var(--ink3); border: 1px dashed var(--line); border-radius: 8px; padding: 4px 8px; max-width: 100%; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip-btn { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 .84rem var(--body); cursor: pointer; }
+.chip-btn.go { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.result { display: none; margin-top: 10px; font-size: .84rem; color: var(--ink2); }
+.result li { list-style: none; display: flex; gap: 8px; padding: 3px 0; }
+.result ul { margin: 0; padding: 0; }
+.result svg { color: var(--good); flex: none; margin-top: 3px; }
+.row.done { background: var(--good-soft); }
+.row.done .glyph { background: var(--good-soft); color: var(--good); }
+.row.done .actions { display: none; }
+.row.done .result { display: block; }
+.hl { background: var(--accent-soft); color: var(--ink); border-radius: 4px; padding: 1px 3px; transition: background .25s ease, box-shadow .25s ease; }
+.hl.on { background: color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+.tag { display: inline-flex; align-items: center; gap: 6px; font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; background: var(--surface2); color: var(--ink2); }
+.tag.soon { background: var(--amber-soft); color: var(--amber); }
+.tag.live { background: var(--good-soft); color: var(--good); }
+
+/* the chat-first hero stage */
+.stage { position: relative; display: grid; justify-items: center; gap: 16px; padding: 8px 0 24px; }
+.halo { position: absolute; border-radius: 50%; z-index: -1; filter: blur(8px); }
+.halo.h1 { width: 380px; height: 380px; right: -40px; top: 10px; background: radial-gradient(circle, var(--glow), transparent 68%); }
+.halo.h2 { width: 300px; height: 300px; left: -30px; bottom: -10px; background: radial-gradient(circle, color-mix(in srgb, var(--good) 22%, transparent), transparent 68%); }
+.mode { display: inline-flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.mode button { min-height: 38px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--ink2); font: 600 .9rem var(--body); cursor: pointer; }
+.mode button.on { background: var(--ink); color: var(--bg); }
+.chatphone { width: min(100%, 420px); background: var(--surface); border: 1px solid var(--line); border-radius: 30px; box-shadow: var(--shadow); overflow: hidden; }
+.chat-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.chat-head b { display: block; font: 700 .98rem var(--display); letter-spacing: -.01em; }
+.chat-head small { color: var(--ink3); font-size: .78rem; }
+.face { width: 36px; height: 36px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
+.chat { display: grid; gap: 10px; padding: 16px; min-height: 420px; align-content: start; font-size: .94rem; }
+.day { justify-self: center; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+.bubble { max-width: 86%; padding: 10px 14px; border-radius: 18px; background: var(--surface2); color: var(--ink); line-height: 1.45; }
+.bubble.mine { justify-self: end; background: var(--ink); color: var(--bg); border-bottom-right-radius: 6px; }
+.bubble.theirs { border-bottom-left-radius: 6px; color: var(--ink2); }
+.bubble.doc { max-width: 100%; font: 400 12.5px/1.65 var(--mono); background: var(--surface2); color: var(--ink2); border-bottom-left-radius: 6px; }
+.bubble.doc b { color: var(--ink); font-weight: 500; }
+.doc-head { display: flex; justify-content: space-between; gap: 10px; font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+.think { display: inline-flex; gap: 5px; align-items: center; color: var(--ink3); font-size: .84rem; }
+.think i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink3); animation: dot 1.2s infinite; }
+.think i:nth-child(2) { animation-delay: .15s; } .think i:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 50% { opacity: .25; } }
+.acard { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.acard > .lab { font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 2px 4px 10px; display: block; }
+.composer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 14px 14px; padding: 10px 10px 10px 16px; border-radius: 999px; background: var(--surface2); color: var(--ink3); font-size: .88rem; }
+.composer i { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); }
+.chip { position: absolute; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); font-size: .86rem; font-weight: 600; animation: float 6s ease-in-out infinite; }
+.chip small { display: block; font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+.chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--good); flex: none; }
+.chip.c-a { left: -40px; top: 330px; } .chip.c-b { right: -22px; bottom: 90px; animation-delay: -3s; }
+@keyframes float { 50% { transform: translateY(-8px); } }
+@media (max-width: 1100px) { .chip { display: none; } }
+
+/* sources ribbon */
+.ribbon { border-block: 1px solid var(--line); background: var(--surface); padding-block: 22px; overflow: hidden; }
+.ribbon .lab { text-align: center; margin-bottom: 14px; }
+.track { display: flex; gap: 12px; width: max-content; animation: slide 46s linear infinite; }
+.ribbon:hover .track { animation-play-state: paused; }
+.pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px; background: var(--bg); color: var(--ink2); font-size: .92rem; white-space: nowrap; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* pillars */
+.pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 44px; }
+.pillar { padding: 28px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.pillar .big { font: 800 2.6rem/1 var(--display); letter-spacing: -.04em; color: var(--accent); margin-bottom: 18px; }
+.pillar p { color: var(--ink2); margin-top: 10px; }
+
+/* how */
+.how-head { display: grid; gap: 14px; max-width: 760px; }
+.steps { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; margin-top: 44px; align-items: start; }
+.tabs { display: grid; gap: 8px; }
+.tab { text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink2); border-radius: 16px; padding: 14px 16px; cursor: pointer; display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: center; font: 600 1rem var(--body); transition: border-color .15s ease, background .15s ease; }
+.tab .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface2); font: 500 12px var(--mono); color: var(--ink3); }
+.tab[aria-selected="true"] { border-color: var(--accent); color: var(--ink); background: var(--surface); box-shadow: var(--shadow); }
+.tab[aria-selected="true"] .n { background: var(--accent); color: var(--accent-ink); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 34px; min-height: 360px; box-shadow: var(--shadow); }
+.panel h3 { font-size: 1.7rem; margin-bottom: 12px; }
+.panel p { color: var(--ink2); max-width: 56ch; }
+.panel ul { margin: 22px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; list-style: none; }
+.panel li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: var(--surface2); font-size: .95rem; color: var(--ink); }
+.panel li svg { flex: none; color: var(--accent); margin-top: 3px; }
+
+/* bento */
+.bento-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; }
+.bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-top: 44px; }
+.cell { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; position: relative; overflow: hidden; transition: border-color .2s ease, transform .2s ease; }
+.cell:hover { border-color: var(--ink3); transform: translateY(-2px); }
+.cell p { color: var(--ink2); font-size: .98rem; }
+.cell .ic { width: 42px; height: 42px; border-radius: 13px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin-bottom: 6px; }
+.c2 { grid-column: span 2; } .c3 { grid-column: span 3; } .c4 { grid-column: span 4; }
+.cell.feature { background: linear-gradient(160deg, var(--surface), var(--surface2)); }
+.mini { margin-top: auto; padding-top: 12px; display: grid; gap: 6px; font-size: .84rem; }
+.mini div { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--surface2); color: var(--ink2); }
+.mini b { color: var(--ink); font-weight: 600; }
+.badge { font: 500 11px var(--mono); padding: 3px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.badge.g { background: var(--good-soft); color: var(--good); }
+.badge.a { background: var(--amber-soft); color: var(--amber); }
+
+/* never */
+.never { background: var(--ink); color: var(--bg); border-radius: 36px; padding: 64px 56px; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 48px; align-items: start; }
+.never h2 { color: var(--bg); }
+.never .lede { color: color-mix(in srgb, var(--bg) 72%, transparent); margin-top: 18px; }
+.nlist { display: grid; gap: 10px; }
+.nrow { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px; align-items: start; padding: 16px 18px; border-radius: 18px; background: color-mix(in srgb, var(--bg) 9%, transparent); border: 1px solid color-mix(in srgb, var(--bg) 14%, transparent); }
+.nrow .x { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.nrow b { display: block; font: 700 1.02rem var(--display); letter-spacing: -.01em; }
+.nrow span { color: color-mix(in srgb, var(--bg) 70%, transparent); font-size: .93rem; }
+
+/* trust + places */
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 44px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 32px; }
+.card p { color: var(--ink2); margin-top: 10px; }
+.audit { margin-top: 22px; display: grid; gap: 8px; font: 400 12.5px/1.5 var(--mono); color: var(--ink2); }
+.audit div { padding: 10px 12px; border-radius: 12px; background: var(--surface2); display: flex; gap: 10px; }
+.audit time { color: var(--ink3); flex: none; }
+.chan { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 44px; }
+.chan .cell { padding: 22px; }
+.chan h3 { font-size: 1.05rem; }
+
+/* india */
+.india { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.rupee { display: grid; gap: 10px; }
+.bill { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 16px 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); align-items: center; }
+.bill .amt { font: 700 1.15rem var(--display); font-variant-numeric: tabular-nums; }
+.bill small { color: var(--ink3); }
+.bill.paid { background: var(--good-soft); border-color: transparent; }
+.scripts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+
+.pull { margin-top: 26px; padding-left: 18px; border-left: 3px solid var(--accent); font: 600 1.15rem/1.4 var(--display); letter-spacing: -.01em; color: var(--bg); max-width: 34ch; }
+.flow { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; counter-reset: f; }
+.flow li { counter-increment: f; position: relative; padding: 18px 16px 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.flow li::before { content: counter(f); font: 500 11px var(--mono); color: var(--ink3); }
+.flow b { font: 700 1.02rem var(--display); letter-spacing: -.01em; }
+.flow small { color: var(--ink3); font-size: .86rem; line-height: 1.4; }
+.flow li.gate { background: var(--accent); border-color: transparent; }
+.flow li.gate b, .flow li.gate small, .flow li.gate::before { color: var(--accent-ink); }
+.sw { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; color: inherit; text-align: left; width: 100%; justify-content: space-between; }
+.sw i { width: 36px; height: 22px; border-radius: 999px; background: var(--line); position: relative; flex: none; transition: background .2s ease; }
+.sw i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .2s ease; }
+.sw[aria-checked="true"] i { background: var(--good); } .sw[aria-checked="true"] i::after { transform: translateX(14px); }
+
+/* sign in and start a household, on this page */
+dialog.auth { border: 1px solid var(--line); border-radius: 28px; padding: 0; width: min(94vw, 460px); background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+dialog.auth::backdrop { background: color-mix(in srgb, var(--bg) 55%, #000 45%); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.auth-in { padding: 26px 26px 24px; display: grid; gap: 16px; }
+.auth-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.auth-tabs { display: inline-flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--surface2); }
+.auth-tabs button { min-height: 38px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--ink2); font: 600 .9rem var(--body); cursor: pointer; }
+.auth-tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.auth-x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+.auth h3 { font-size: 1.5rem; letter-spacing: -.02em; }
+.auth p.s { color: var(--ink2); font-size: .95rem; }
+.auth form { display: grid; gap: 12px; }
+.auth label { display: grid; gap: 6px; font: 600 .84rem var(--body); color: var(--ink2); }
+.auth input { font: 400 1rem var(--body); min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.auth input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.auth .or { display: flex; align-items: center; gap: 12px; color: var(--ink3); font-size: .82rem; }
+.auth .or::before, .auth .or::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+.auth details summary { cursor: pointer; color: var(--ink3); font-size: .88rem; padding: 6px 0; }
+.auth-msg { min-height: 1.3em; font-size: .9rem; color: var(--ink2); }
+.auth-msg.bad { color: var(--accent); }
+.auth .fine { color: var(--ink3); font-size: .8rem; }
+/* final */
+.final { text-align: center; display: grid; justify-items: center; gap: 22px; padding: 72px 24px; border-radius: 36px; background: radial-gradient(70% 90% at 50% 0%, var(--glow), transparent 70%), var(--surface); border: 1px solid var(--line); }
+.final .lede { max-width: 52ch; }
+.note { font-size: .88rem; color: var(--ink3); min-height: 1.4em; }
+footer { padding-block: 40px 56px; color: var(--ink3); font-size: .9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 28px; }
+
+@media (max-width: 980px) {
+  .hero-grid, .never, .india, .two { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .tabs { grid-template-columns: repeat(5, minmax(150px, 1fr)); overflow-x: auto; padding-bottom: 6px; }
+  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .c2, .c3, .c4 { grid-column: span 1; }
+  .c4 { grid-column: span 2; }
+  .pillars { grid-template-columns: minmax(0, 1fr); }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .never { padding: 40px 24px; border-radius: 28px; }
+  .navlinks { display: none; }
+}
+@media (max-width: 620px) {
+  section { padding-block: 60px; }
+  .bento { grid-template-columns: minmax(0, 1fr); }
+  .c4 { grid-column: span 1; }
+  .panel { padding: 24px; } .panel ul { grid-template-columns: minmax(0, 1fr); }
+  .flow { grid-template-columns: minmax(0, 1fr); }
+  .btn { width: 100%; justify-content: center; }
+  .nav .btn { width: auto; }
+  .cta-row { display: grid; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .track { animation: none; flex-wrap: wrap; width: auto; justify-content: center; }
+  .cell, .btn, .hl { transition: none; } .chip, .think i { animation: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l1.5 2h-15L6 17zM10 21h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pill" viewBox="0 0 24 24"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-35 12 12)" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.2 9.2l5.6 5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M16 14.5h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5C4.7 19 4 18.3 4 17.5v-12zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v15h5.5c.8 0 1.5-.7 1.5-1.5v-12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V19a1.5 1.5 0 01-1.5 1.5h-9.5A1.5 1.5 0 015.5 19V5A1.5 1.5 0 017 3.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 3.5V8h4.5M9 13h6M9 16.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 19c.5-3.2 3-5 6-5s5.5 1.8 6 5M16 6.3a3 3 0 010 5.4M18 14.4c1.6.6 2.7 2 3 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.3l2 11h10.2l1.8-8H6.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19" r="1.4" fill="currentColor"/><circle cx="17" cy="19" r="1.4" fill="currentColor"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM18.5 16l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.5-5.6 6.5-11A6.5 6.5 0 005.5 10c0 5.4 6.5 11 6.5 11z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V19a1 1 0 01-1 1h-4.5v-5h-5v5H5a1 1 0 01-1-1v-7.5z" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="FamilyOS home"><span class="mark"><svg width="17" height="17"><use href="#i-logo"/></svg></span>FamilyOS</a>
+    <nav class="navlinks" aria-label="Sections">
+      <a href="#how">How it works</a><a href="#features">Features</a><a href="#people">For everyone</a><a href="#trust">Privacy</a><a href="#india">Built for India</a>
+    </nav>
+    <div class="navr">
+      <button class="icon-btn" id="theme" type="button" aria-label="Switch theme"><svg width="19" height="19" id="theme-ic"><use href="#i-sun"/></svg></button>
+      <a class="btn sm" data-signin href="#access" hidden>Sign in</a>
+      <a class="btn primary sm" data-start href="#access">Start your home</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Private beta · for households that run on paperwork</span>
+      <h1>The family paperwork, <span class="accent">read for you.</span></h1>
+      <p class="lede">School circulars, bills, receipts and prescriptions reach your household from everywhere. FamilyOS turns each one into a date you accept, a reminder that reaches the right person, and a record that points back to the page it came from. Nothing happens without your yes.</p>
+      <div class="cta-row">
+        <a class="btn primary" data-start href="#access">Start your home</a>
+        <a class="btn" href="#how">See how it works</a>
+      </div>
+      <div class="proof">
+        <span><i></i>Every fact quotes its source</span>
+        <span><i></i>Proposes, never decides</span>
+        <span><i></i>Private until you share</span>
+      </div>
+    </div>
+
+    <div class="stage" aria-label="Example conversations with FamilyOS">
+      <div class="halo h1" aria-hidden="true"></div><div class="halo h2" aria-hidden="true"></div>
+      <div class="mode" role="tablist" aria-label="Example">
+        <button type="button" role="tab" class="on" data-mode="notice" aria-selected="true">A notice arrives</button>
+        <button type="button" role="tab" data-mode="ask" aria-selected="false">You ask</button>
+      </div>
+      <article class="chatphone">
+        <div class="chat-head"><span class="face" aria-hidden="true"><svg width="18" height="18"><use href="#i-spark"/></svg></span><div><b>FamilyOS</b><small>Only what you can see</small></div><span class="tag live" style="margin-left:auto">Private</span></div>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="composer" aria-hidden="true"><span>Forward a notice, or ask a question</span><i></i></div>
+      </article>
+      <div class="chip c-a"><i></i><span><small>Bills</small>Airtel closed by its receipt</span></div>
+      <div class="chip c-b"><i></i><span><small>Health</small>Refill due in 5 days</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="ribbon" aria-label="Where notices come from">
+  <p class="eyebrow lab">Notices arrive the way they already do</p>
+  <div class="track" id="track"></div>
+</div>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Three promises</span>
+    <h2 style="margin-top:14px;max-width:18ch">Built to be trusted with a family.</h2>
+    <div class="pillars">
+      <div class="pillar"><div class="big">Notice</div><h3>It carries the mental load by noticing</h3><p>The dates, forms, bills and refills hidden in your inbox become a short list a person can decide on in a minute.</p></div>
+      <div class="pillar"><div class="big">Source</div><h3>Nothing on screen without its source</h3><p>Every date, amount and dose quotes the line it was read from and points to the original page, so you can check it in one tap.</p></div>
+      <div class="pillar"><div class="big">Yours</div><h3>Private by default, shared on purpose</h3><p>What you forward stays yours until you share it. Who can see a thing is always visible, and children’s notices follow the consent a guardian recorded.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how" style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="how-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Drop in the chaos. Get back a plan.</h2>
+      <p class="lede">Five steps, and a person decides at the one that matters.</p>
+    </div>
+    <div class="steps">
+      <div class="tabs" role="tablist" aria-label="Steps" id="tabs"></div>
+      <div class="panel" id="panel" role="tabpanel" tabindex="0"></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="bento-head">
+      <div><span class="eyebrow">Everything in the box</span><h2 style="margin-top:14px;max-width:16ch">One household, one calm place.</h2></div>
+      <p class="lede" style="max-width:44ch">From the school run to a prescription refill, each part works from the same record and answers to the same rules.</p>
+    </div>
+
+    <div class="bento">
+      <article class="cell c4 feature">
+        <span class="ic"><svg width="22" height="22"><use href="#i-sun"/></svg></span>
+        <h3>Today: what the day needs from you</h3>
+        <p>One screen that answers “what needs me?” without a scroll. The next thing up, the decisions waiting, what is late and still open, the school run with leave-by times, the weather and the next holiday.</p>
+        <div class="mini">
+          <div><span><b>Half-day schedule</b> · school</span><span class="badge">Next up 8:30</span></div>
+          <div><span><b>Parent-Teacher Meeting</b> · proposed</span><span class="badge a">Late</span></div>
+          <div><span><b>8 min to school</b> · leave by 8:27</span><span class="badge g">On time</span></div>
+        </div>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-bell"/></svg></span>
+        <h3>Reminders that reach the right person</h3>
+        <p>Banners on the phone with Done, Snooze and a follow-up on the day it is due. The same reminder by Telegram and mail.</p>
+      </article>
+
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-book"/></svg></span>
+        <h3>School, in any script</h3>
+        <p>Circulars, PTMs, half days and exam sheets from mail, a photo or the school app. Devanagari and Tamil are told apart from English.</p>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-wallet"/></svg></span>
+        <h3>Money you can follow</h3>
+        <p>Bills, UPI alerts, subscriptions and what recurs. A receipt that matches a bill closes it. A bill well above its usual is flagged.</p>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-pill"/></svg></span>
+        <h3>Medicines, by person</h3>
+        <p>A prescription becomes one line per medicine with the doctor’s own words, the clinic, the date and a refill reminder days before the supply ends.</p>
+      </article>
+
+      <article class="cell c3">
+        <span class="ic"><svg width="22" height="22"><use href="#i-spark"/></svg></span>
+        <h3>It anticipates, gently</h3>
+        <p>A birthday on the calendar suggests a gift four days ahead. A trip suggests passports and packing. Eggs bought every nine days, and nine have passed, get a Reorder link. You add them, or you do not.</p>
+        <div class="mini"><div><span><b>Gift for Kabir</b> · birthday Sat</span><span class="badge">Add</span></div><div><span><b>Eggs</b> · about every 9 days</span><span class="badge a">Reorder</span></div></div>
+      </article>
+      <article class="cell c3">
+        <span class="ic"><svg width="22" height="22"><use href="#i-file"/></svg></span>
+        <h3>Documents that warn you early</h3>
+        <p>Passport, licence, policy and PUC expiry, with the lead each one needs. A one-time code or a statement is never filed as a document, and codes are thrown away on arrival.</p>
+        <div class="mini"><div><span><b>Passport</b> · expires in 8 months</span><span class="badge a">Renew now</span></div><div><span><b>Two-wheeler PUC</b> · 12 days</span><span class="badge a">Soon</span></div></div>
+      </article>
+
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-users" /></svg></span>
+        <h3>A circle, not a crowd</h3>
+        <p>Grandparents, a caretaker or a relative see only what you share with them, and can be handed a task.</p>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-search"/></svg></span>
+        <h3>Ask, search and speak</h3>
+        <p>Ask a question and get an answer from your own record. Find “the plumber” and reach the pipe repair. Dictate a note, heard on your own machine.</p>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-shield"/></svg></span>
+        <h3>A scam guard that says “matches”</h3>
+        <p>A message that has the shape of a scam proposes nothing and tells the guardians once what it resembles and what to do.</p>
+      </article>
+
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-pin"/></svg></span>
+        <h3>Location, if each adult says yes</h3>
+        <p>Each adult opts in for themselves. Others see home, the office or away, and hear when you arrive. Only the latest point is kept, never a trail.</p>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-cal"/></svg></span>
+        <h3>Calendar that follows decisions</h3>
+        <p>Accept a date and it goes to your calendar. Mark it handled and it comes off. Holidays can be accepted on arrival.</p>
+      </article>
+      <article class="cell c2">
+        <span class="ic"><svg width="22" height="22"><use href="#i-cart"/></svg></span>
+        <h3>Errands, in full view</h3>
+        <p>A booking or a site visit is written out in full, approved by a guardian, and run with every step pictured.</p>
+        <div class="tag soon" style="align-self:flex-start;margin-top:auto">Payments: guardian-approved, in testing</div>
+      </article>
+
+      <article class="cell c3">
+        <span class="ic"><svg width="22" height="22"><use href="#i-moon"/></svg></span>
+        <h3>Calm by design</h3>
+        <p>Promotions never become obligations, and a sale is not a task. Investment mail stays quiet. An OTP is never kept. When you set a rule, your rule wins.</p>
+        <div class="mini"><div><span><b>“70% off this weekend”</b></span><span class="badge">Set aside</span></div><div><span><b>Margin statement</b> · broker</span><span class="badge">Filed, nothing proposed</span></div></div>
+      </article>
+      <article class="cell c3" id="rules">
+        <span class="ic"><svg width="22" height="22"><use href="#i-shield"/></svg></span>
+        <h3>Your rules are the operating system</h3>
+        <p>Each rule is a plain sentence with a switch. Who sees a child’s notices, whether a holiday is accepted on arrival, whether a receipt settles a bill, and where the model that reads your mail runs.</p>
+        <div class="mini" id="ruleList"></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="people" style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap india">
+    <div>
+      <span class="eyebrow">One family, private context</span>
+      <h2 style="margin:14px 0 18px">Everyone gets help. No one loses privacy.</h2>
+      <p class="lede">Every adult has a private space and the household has a shared one. A notice is private until you share it, and sharing is a decision you can see. A grandparent or a caretaker sees only what is handed to them. Children are noticed for, and never sign in.</p>
+      <div class="scripts"><span class="pill">Private</span><span class="pill">Shared with the household</span><span class="pill">Handed to one person</span></div>
+    </div>
+    <div class="rupee" aria-label="Example: who sees what">
+      <div class="bill"><div><b>Maya</b><br><small>Grocery receipts stay private to her. They still feed the pantry nudge on her phone.</small></div><span class="badge">Private</span></div>
+      <div class="bill"><div><b>Alex</b><br><small>Prescriptions and the school circular. Shares the circular, keeps the prescription.</small></div><span class="badge g">Shared: circular</span></div>
+      <div class="bill"><div><b>Paati</b><br><small>Sees the clinic visit that was handed to her, and nothing else.</small></div><span class="badge a">Handed to her</span></div>
+      <div class="bill"><div><b>Lily, Noah</b><br><small>Their school notices are read for them, with a guardian’s consent recorded.</small></div><span class="badge">Not users</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="never">
+  <div class="wrap">
+    <div class="never">
+      <div>
+        <span class="eyebrow" style="color:color-mix(in srgb, var(--bg) 60%, transparent)">The line we hold</span>
+        <h2 style="margin-top:14px">A short list of things it will not do.</h2>
+        <p class="lede">Most family tools get faster by doing more on their own. FamilyOS gets trusted by stopping where a person should decide.</p>
+        <p class="pull">The important thing is not that AI can act. It is that your family always knows why.</p>
+      </div>
+      <div class="nlist">
+        <div class="nrow"><span class="x"><svg width="16" height="16"><use href="#i-x"/></svg></span><div><b>Spend money on its own</b><span>Payments are off until a guardian switches them on, capped per purchase and per month, and each purchase needs a guardian’s approval.</span></div></div>
+        <div class="nrow"><span class="x"><svg width="16" height="16"><use href="#i-x"/></svg></span><div><b>Hold a card number or a password</b><span>The payment provider holds the card. FamilyOS keeps only an id.</span></div></div>
+        <div class="nrow"><span class="x"><svg width="16" height="16"><use href="#i-x"/></svg></span><div><b>Read a group chat it was not asked into</b><span>In a Telegram group it reads only a message that names it or replies to it, and says nothing about the rest.</span></div></div>
+        <div class="nrow"><span class="x"><svg width="16" height="16"><use href="#i-x"/></svg></span><div><b>Keep a trail of where you go</b><span>Sharing is yours to switch on and off. Off deletes the point at once.</span></div></div>
+        <div class="nrow"><span class="x"><svg width="16" height="16"><use href="#i-x"/></svg></span><div><b>Show a fact it cannot point back to</b><span>A date it cannot ground in the original stays visible for review and becomes nothing.</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="trust" style="padding-top:24px">
+  <div class="wrap">
+    <span class="eyebrow">Privacy by construction</span>
+    <h2 style="margin-top:14px;max-width:20ch">A record you can check and a key you can destroy.</h2>
+    <ol class="flow" aria-label="How every action is governed">
+      <li><b>Observe</b><small>Only the sources you chose</small></li>
+      <li><b>Understand</b><small>Each fact tied to its evidence</small></li>
+      <li><b>Propose</b><small>A clear next step, never a surprise</small></li>
+      <li class="gate"><b>You approve</b><small>Nothing important skips this</small></li>
+      <li><b>Follow through</b><small>With a reminder and a record</small></li>
+    </ol>
+    <div class="two">
+      <div class="card">
+        <span class="ic" style="display:inline-grid;width:42px;height:42px;border-radius:13px;background:var(--accent-soft);color:var(--accent);place-items:center"><svg width="22" height="22"><use href="#i-lock"/></svg></span>
+        <h3 style="margin-top:14px">Derived, never merged</h3>
+        <p>What FamilyOS knows about your household is computed from the notices you shared, each sealed with your household’s key. Destroy the key and what it knew becomes unreadable, because it was only ever derived.</p>
+        <p>Read by a model on your machine, on a server you run, or by a cloud provider. You choose, and the setting tells you where it runs.</p>
+      </div>
+      <div class="card">
+        <span class="ic" style="display:inline-grid;width:42px;height:42px;border-radius:13px;background:var(--accent-soft);color:var(--accent);place-items:center"><svg width="22" height="22"><use href="#i-shield"/></svg></span>
+        <h3 style="margin-top:14px">Every action, in plain words</h3>
+        <p>A sentence for everything that happened, who did it and when. Readable by the household, never by us.</p>
+        <div class="audit">
+          <div><time>09:12</time><span>Maya accepted a date: Annual Day attendance</span></div>
+          <div><time>09:14</time><span>Appa turned location sharing on</span></div>
+          <div><time>18:00</time><span>A receipt marked the Airtel bill paid, ₹1,460</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:24px">
+  <div class="wrap">
+    <span class="eyebrow">Where it lives</span>
+    <h2 style="margin-top:14px;max-width:18ch">On the apps your family already opens.</h2>
+    <div class="chan">
+      <div class="cell"><span class="tag live">Live</span><h3>iPhone app</h3><p>Today, reminders with Done and Snooze, Health, Family and the share sheet.</p></div>
+      <div class="cell"><span class="tag live">Live</span><h3>Web console</h3><p>The full record for a guardian going through the week at a laptop.</p></div>
+      <div class="cell"><span class="tag live">Live</span><h3>Telegram</h3><p>Forward a notice, ask a question, tap Done under a reminder.</p></div>
+      <div class="cell"><span class="tag live">Live</span><h3>Mail</h3><p>A mailbox you connect, or a private address to forward to.</p></div>
+      <div class="cell"><span class="tag soon">Next</span><h3>WhatsApp</h3><p>Forward to a business number, once Meta’s verification is done.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="india">
+  <div class="wrap india">
+    <div>
+      <span class="eyebrow">Built for India</span>
+      <h2 style="margin:14px 0 18px">Rupees, UPI and the school circular.</h2>
+      <p class="lede">The paperwork of an Indian household is its own genre. FamilyOS reads it as written: amounts in rupees, UPI alerts from your bank, grocery receipts from quick-commerce apps, half-day notices and PTMs in the school’s own words.</p>
+      <div class="scripts"><span class="pill">English</span><span class="pill">हिन्दी</span><span class="pill">தமிழ்</span><span class="pill">Handwritten prescriptions</span></div>
+    </div>
+    <div class="rupee" aria-label="Example: a receipt closes a bill">
+      <div class="bill"><div><b>Airtel postpaid</b><br><small>Due Thu 15 Oct · from mail</small></div><span class="amt">₹1,460</span></div>
+      <div class="bill paid"><div><b>UPI alert · Airtel</b><br><small>Matches the bill: same biller, same amount</small></div><span class="amt" style="color:var(--good)">Paid</span></div>
+      <div class="bill"><div><b>Eggs, 12 pack</b><br><small>Bought about every 9 days · Instamart</small></div><span class="badge a">Running low</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="access" style="padding-top:24px">
+  <div class="wrap">
+    <div class="final">
+      <span class="eyebrow">Begin with one household</span>
+      <h2 style="max-width:18ch">Start with the notices already arriving.</h2>
+      <p class="lede" id="final-lede">We are inviting households one at a time, and set each one up with its own schools, mail and phones. Copy the note, add your details, and send it to the person who shared this page with you.</p>
+      <div class="cta-row" style="justify-content:center">
+        <a class="btn primary" data-start href="#access" id="start-main">Start your home</a>
+        <button class="btn" type="button" id="copy">Copy the request</button>
+        <a class="btn" data-signin href="#access" hidden>Sign in</a>
+      </div>
+      <p class="note" id="note" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© FamilyOS. Noticing, not doing.</span>
+    <span>Examples on this page are illustrations, not customer data.</span>
+  </div>
+</footer>
+
+<dialog class="auth" id="auth" aria-labelledby="auth-title">
+  <div class="auth-in">
+    <div class="auth-top">
+      <div class="auth-tabs" role="tablist" aria-label="Sign in or start">
+        <button type="button" role="tab" data-auth-tab="in" aria-selected="true">Sign in</button>
+        <button type="button" role="tab" data-auth-tab="new" aria-selected="false">Start a household</button>
+      </div>
+      <button type="button" class="auth-x" id="auth-close" aria-label="Close"><svg width="16" height="16"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div data-auth-panel="in">
+      <h3 id="auth-title">Welcome back</h3>
+      <p class="s">Sign in to the household you already have.</p>
+      <div style="display:grid;gap:12px;margin-top:14px">
+        <button class="btn" type="button" id="auth-google">Continue with Google</button>
+        <p class="fine">Google shares your email address only. Reading mail is a separate choice you can decline.</p>
+        <div class="or">or use a private email link</div>
+        <form id="auth-link">
+          <label for="auth-link-email">Your email<input id="auth-link-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required></label>
+          <button class="btn primary" type="submit">Email me a sign-in link</button>
+        </form>
+        <details>
+          <summary>I have a token</summary>
+          <form id="auth-token" style="margin-top:8px">
+            <label for="auth-token-in">Sign-in token<input id="auth-token-in" type="password" name="token" autocomplete="off" required></label>
+            <button class="btn" type="submit">Sign in</button>
+          </form>
+        </details>
+      </div>
+    </div>
+
+    <div data-auth-panel="new" hidden>
+      <h3>Start a household</h3>
+      <p class="s">You become its first guardian. Invite the rest of your family when you are ready.</p>
+      <form id="auth-new" style="margin-top:14px">
+        <label for="auth-new-house">Household name<input id="auth-new-house" name="name" placeholder="The Iyer family" autocomplete="off" required></label>
+        <label for="auth-new-me">Your name<input id="auth-new-me" name="display_name" placeholder="Amma" autocomplete="name" required></label>
+        <label for="auth-new-email">Your email<input id="auth-new-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required></label>
+        <button class="btn primary" type="submit">Create my household</button>
+      </form>
+    </div>
+    <p class="auth-msg" id="auth-msg" role="status" aria-live="polite"></p>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var authEl = document.getElementById('auth');
+  var authMsg = document.getElementById('auth-msg');
+  var root = document.documentElement;
+  var KEY = 'familyos.landing.theme';
+  function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage may be blocked */ } }
+
+  /* theme: system, then light, then dark */
+  var order = ['system', 'light', 'dark'];
+  var mode = safeGet(KEY) || 'system';
+  if (order.indexOf(mode) < 0) mode = 'system';
+  var themeBtn = document.getElementById('theme');
+  var themeIc = document.getElementById('theme-ic');
+  function applyTheme() {
+    if (mode === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', mode);
+    var dark = mode === 'dark' || (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    themeIc.innerHTML = '<use href="#i-' + (dark ? 'moon' : 'sun') + '"/>';
+    themeBtn.setAttribute('aria-label', 'Theme: ' + mode + '. Switch theme');
+    themeBtn.title = 'Theme: ' + mode;
+  }
+  themeBtn.addEventListener('click', function () { mode = order[(order.indexOf(mode) + 1) % order.length]; safeSet(KEY, mode); applyTheme(); });
+  applyTheme();
+
+  /* sources ribbon, doubled for a seamless loop */
+  var sources = ['Gmail', 'A private forwarding address', 'Telegram', 'iPhone share sheet', 'Photos of paper', 'Handwritten prescriptions', 'School app announcements', 'UPI alerts from your bank', 'Quick-commerce receipts', 'Calendar'];
+  var track = document.getElementById('track');
+  var html = '';
+  for (var pass = 0; pass < 2; pass++) sources.forEach(function (s) { html += '<span class="pill"' + (pass ? ' aria-hidden="true"' : '') + '>' + s + '</span>'; });
+  track.innerHTML = html;
+
+  /* the chat-first hero: two examples, both ending where a person decides */
+  var chat = document.getElementById('chat');
+  var OK = '<svg width="16" height="16"><use href="#i-check"/></svg>';
+  function row(id, glyph, title, meta, quote, hl) {
+    return '<div class="row" id="' + id + '"><span class="glyph"><svg width="20" height="20"><use href="#i-' + glyph + '"/></svg></span><div><h4>' + title + '</h4><div class="meta">' + meta + '</div>'
+      + '<span class="src"><svg width="12" height="12"><use href="#i-file"/></svg>' + quote + '</span>'
+      + '<div class="actions"><button class="chip-btn go" type="button" data-accept="' + id + '" data-hl="' + hl + '">Accept</button><button class="chip-btn" type="button" data-skip="' + id + '">Not this</button></div>'
+      + '<div class="result"><ul><li>' + OK + 'On the family calendar, with its source</li><li>' + OK + 'Reminders ahead of the date: phone, Telegram, mail</li></ul></div></div></div>';
+  }
+  var modes = {
+    notice: '<div class="day">Forwarded from mail · 8:42</div>'
+      + '<div class="bubble doc"><div class="doc-head"><span>Circular 41/2026</span><span>Example</span></div><b>Vidya Mandir Senior Secondary School</b><br>The <span class="hl" id="hl1">Annual Day will be held on Friday 14 November 2026 at 5:00 PM</span> in the school auditorium. Parents are requested to <span class="hl" id="hl2">confirm attendance by 7 November 2026</span>.</div>'
+      + '<div class="bubble theirs">Two things in this circular ask something of you.</div>'
+      + '<div class="acard"><span class="lab">Needs you</span>' + row('r1', 'cal', 'Confirm attendance for Annual Day', 'By Sat 7 Nov · Vidya Mandir', 'p.1 · “confirm attendance by 7 November 2026”', 'hl2')
+      + row('r2', 'spark', 'Annual Day, Fri 14 Nov, 5:00 PM', 'Add to the calendar for everyone', 'p.1 · “Friday 14 November 2026 at 5:00 PM”', 'hl1') + '</div>'
+      + '<div class="bubble theirs">Nothing goes on the calendar until you accept.</div>',
+    ask: '<div class="day">You · 8:42</div>'
+      + '<div class="bubble mine">Anything I am missing for school this week?</div>'
+      + '<div class="think" aria-hidden="true"><i></i><i></i><i></i><span>Reading what you can see</span></div>'
+      + '<div class="acard"><span class="lab">Two things</span>' + row('r3', 'book', 'Sign the PTM consent form', 'Due Thu · Lily, Class KG-1', 'p.2 · “return the signed slip by Thursday”', 'x')
+      + row('r4', 'cal', 'Half-day schedule, Wed 14 Oct', 'Pickup at 12:30 · both children', 'p.1 · “half day for Grades 1 to 6”', 'x') + '</div>'
+      + '<div class="bubble theirs">I only read what you can see. Nothing is sent, booked or paid from here.</div>'
+  };
+  function showChat(mode) {
+    chat.innerHTML = modes[mode];
+    Array.prototype.forEach.call(document.querySelectorAll('.mode button'), function (b) { var on = b.getAttribute('data-mode') === mode; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+    wire();
+  }
+  function mark(id, on) { var el = document.getElementById(id); if (el) el.classList.toggle('on', on); }
+  function wire() {
+    Array.prototype.forEach.call(chat.querySelectorAll('.row'), function (r) {
+      var btn = r.querySelector('[data-hl]'); var hl = btn && btn.getAttribute('data-hl');
+      r.addEventListener('mouseenter', function () { mark(hl, true); }); r.addEventListener('mouseleave', function () { mark(hl, false); });
+      r.addEventListener('focusin', function () { mark(hl, true); }); r.addEventListener('focusout', function () { mark(hl, false); });
+    });
+    Array.prototype.forEach.call(chat.querySelectorAll('[data-accept]'), function (b) {
+      b.addEventListener('click', function () { var r = document.getElementById(b.getAttribute('data-accept')); r.classList.add('done'); r.querySelector('.glyph').innerHTML = '<svg width="20" height="20"><use href="#i-check"/></svg>'; });
+    });
+    Array.prototype.forEach.call(chat.querySelectorAll('[data-skip]'), function (b) {
+      b.addEventListener('click', function () {
+        var r = document.getElementById(b.getAttribute('data-skip'));
+        r.querySelector('.actions').innerHTML = '<span class="meta">Set aside. Nothing was added.</span> <button class="chip-btn" type="button" data-undo>Undo</button>';
+        r.querySelector('[data-undo]').addEventListener('click', function () { showChat(document.querySelector('.mode button.on').getAttribute('data-mode')); });
+      });
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.mode button'), function (b) { b.addEventListener('click', function () { showChat(b.getAttribute('data-mode')); }); });
+  showChat('notice');
+
+  /* how it works */
+  var steps = [
+    { t: 'It arrives', h: 'Forward it, share it, or let it come.', p: 'A school circular in your mail, a photo of a prescription, a bank’s UPI alert, a message forwarded on Telegram. Nobody retypes anything.',
+      b: ['Gmail and a private forwarding address', 'Telegram, with a strict rule for groups', 'The iPhone share sheet and camera', 'Announcements read from the school app on your phone'] },
+    { t: 'It is read', h: 'Read in context, quoted from the page.', p: 'Text is read from PDFs, scans, photos and handwriting. Each date, amount or dose is kept with the exact line and the place on the page it came from.',
+      b: ['Printed, scanned and photographed pages', 'Hindi and Tamil scripts told apart from English', 'Promotions, newsletters and one-time codes set aside', 'A scam shape is named, and nothing is proposed from it'] },
+    { t: 'You decide', h: 'A short list. Accept, or not this.', p: 'What the notice asks of you appears as proposals: sign the form, pay the fee, attend on Friday. Nothing becomes a date until a person says so.',
+      b: ['Late items stay on Today until someone acts', 'A revision is matched to the notice it changes', 'Hand a notice to another adult with a note', 'Holidays can be accepted on arrival, if you choose'] },
+    { t: 'The right person is told', h: 'A reminder that gets seen.', p: 'Reminders go ahead of the date to whoever owns the task, on the channel they use, and ask for an answer instead of a glance.',
+      b: ['Phone banners with Done and Snooze', 'A second banner on the day it is due, if still open', 'Telegram and mail, on time', 'The calendar follows each decision'] },
+    { t: 'It closes itself', h: 'The loop shuts when the receipt lands.', p: 'A receipt or a UPI alert that matches an open bill marks it paid and tells whoever was holding it. Rent can be made each month by a rule you set, and closed by its receipt.',
+      b: ['Same biller, same amount, near the due date', 'Standing payments proposed a fortnight ahead', 'Nothing is ever paid for you without approval', 'The audit says what happened in a sentence'] }
+  ];
+  var tabs = document.getElementById('tabs'); var panel = document.getElementById('panel');
+  function check() { return '<svg width="18" height="18"><use href="#i-check"/></svg>'; }
+  function show(i) {
+    var s = steps[i];
+    Array.prototype.forEach.call(tabs.children, function (el, j) { el.setAttribute('aria-selected', j === i ? 'true' : 'false'); el.tabIndex = j === i ? 0 : -1; });
+    panel.innerHTML = '<span class="eyebrow">Step ' + (i + 1) + ' of ' + steps.length + '</span><h3 style="margin-top:12px">' + s.h + '</h3><p>' + s.p + '</p><ul>' + s.b.map(function (x) { return '<li>' + check() + '<span>' + x + '</span></li>'; }).join('') + '</ul>';
+    panel.setAttribute('aria-labelledby', 'tab' + i);
+  }
+  steps.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab'; b.id = 'tab' + i; b.setAttribute('role', 'tab');
+    b.innerHTML = '<span class="n">' + (i + 1) + '</span><span>' + s.t + '</span>';
+    b.addEventListener('click', function () { show(i); });
+    b.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+      if (d) { e.preventDefault(); var n = (i + d + steps.length) % steps.length; show(n); tabs.children[n].focus(); }
+    });
+    tabs.appendChild(b);
+  });
+  show(0);
+
+  /* early access: copies a ready-to-send request */
+  var note = document.getElementById('note');
+  var msg = 'Hello, I would like early access to FamilyOS for my household.\n\nPeople in the household: \nCity: \nSchool(s) the children attend: \nWhere notices reach us today (mail, WhatsApp, Telegram, paper): \nPhone (iPhone or Android): \n';
+  var copyBtn = document.getElementById('copy');
+  if (copyBtn) copyBtn.addEventListener('click', function () {
+    function ok() { note.textContent = 'Copied. Paste it into a message, add your details and send it to the person who shared this page.'; }
+    function fail() {
+      var ta = document.createElement('textarea'); ta.value = msg; ta.setAttribute('readonly', ''); ta.style.cssText = 'width:100%;max-width:520px;height:160px;border-radius:12px;padding:12px;font:13px var(--mono);background:var(--surface2);color:var(--ink);border:1px solid var(--line)';
+      note.textContent = 'Select the text below and copy it.'; note.appendChild(document.createElement('br')); note.appendChild(ta); ta.focus(); ta.select();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(ok, fail); else fail();
+  });
+
+  /* rules: plain sentences with a switch (an illustration of the household rules) */
+  var rules = [['Children’s notices are shared with every adult', true], ['Holidays are accepted on arrival', false], ['A receipt settles the bill it matches', true], ['Investment mail stays quiet', true]];
+  var list = document.getElementById('ruleList');
+  if (list) rules.forEach(function (r) {
+    var d = document.createElement('div');
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', r[1] ? 'true' : 'false');
+    b.innerHTML = '<span>' + r[0] + '</span><i></i>';
+    b.addEventListener('click', function () { b.setAttribute('aria-checked', b.getAttribute('aria-checked') === 'true' ? 'false' : 'true'); });
+    d.appendChild(b); list.appendChild(d);
+  });
+
+  /* served by the console: sign-in and start-a-household live there; a signed-in visitor goes straight in */
+  var BASE = window.FOS_CONSOLE;
+  if (BASE) {
+    try { if (localStorage.getItem('familyos.token')) { window.location.replace(BASE); return; } } catch (e) { /* no storage: show the page */ }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-start]'), function (a) { a.setAttribute('href', '#start'); a.addEventListener('click', function (e) { e.preventDefault(); openAuth('new'); }); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-signin]'), function (a) { a.setAttribute('href', '#signin'); a.hidden = false; a.addEventListener('click', function (e) { e.preventDefault(); openAuth('in'); }); });
+    wireAuth(BASE);
+    if (window.location.hash === '#start') openAuth('new'); else if (window.location.hash === '#signin') openAuth('in');
+    var copy = document.getElementById('copy'); if (copy) copy.hidden = true;
+    var fl = document.getElementById('final-lede'); if (fl) fl.textContent = 'Create a household in a minute and become its first guardian. Forward one notice and see what it becomes. Invite the rest of the family when you are ready.';
+  }
+
+  /* sign in and start a household without leaving the page: the same calls the console makes */
+  function say(t, bad) { authMsg.textContent = t || ''; authMsg.classList.toggle('bad', !!bad); }
+  function tabAuth(which) {
+    Array.prototype.forEach.call(authEl.querySelectorAll('[data-auth-tab]'), function (b) { b.setAttribute('aria-selected', b.getAttribute('data-auth-tab') === which ? 'true' : 'false'); });
+    Array.prototype.forEach.call(authEl.querySelectorAll('[data-auth-panel]'), function (p) { p.hidden = p.getAttribute('data-auth-panel') !== which; });
+    say('');
+  }
+  function openAuth(which) {
+    tabAuth(which);
+    if (!authEl.open) { if (authEl.showModal) authEl.showModal(); else authEl.setAttribute('open', ''); }
+    var first = authEl.querySelector('[data-auth-panel]:not([hidden]) input');
+    if (first && which === 'new') window.setTimeout(function () { first.focus(); }, 60);
+  }
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = { 'Content-Type': 'application/json' };
+    if (opts.token) headers.Authorization = 'Bearer ' + opts.token;
+    return fetch('/v1' + path, { method: opts.method || 'GET', headers: headers, body: opts.json ? JSON.stringify(opts.json) : undefined }).then(function (r) {
+      return r.text().then(function (t) {
+        var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) { /* not JSON */ }
+        if (!r.ok) { var err = new Error((d && (d.detail || d.error)) || 'Something went wrong (' + r.status + ')'); err.status = r.status; throw err; }
+        return d;
+      });
+    });
+  }
+  function enter(token, base) {
+    try { localStorage.setItem('familyos.token', token); } catch (e) { say('This browser is blocking storage, so it cannot keep you signed in.', true); return; }
+    window.location.href = base;
+  }
+  function wireAuth(base) {
+    Array.prototype.forEach.call(authEl.querySelectorAll('[data-auth-tab]'), function (b) { b.addEventListener('click', function () { tabAuth(b.getAttribute('data-auth-tab')); }); });
+    document.getElementById('auth-close').addEventListener('click', function () { authEl.close(); });
+    authEl.addEventListener('click', function (e) { if (e.target === authEl) authEl.close(); });
+    document.getElementById('auth-google').addEventListener('click', function () {
+      say('Opening Google');
+      api('/sign-in/google').then(function (w) { window.location.href = w.url; }, function () { say('Google sign-in is not set up here. Use an email link instead.', true); });
+    });
+    document.getElementById('auth-link').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = new FormData(e.target).get('email').trim(); if (!email) return;
+      api('/sign-in/request', { method: 'POST', json: { email: email } }).then(null, function () { /* the answer is the same either way, on purpose */ }).then(function () {
+        say('If ' + email + ' can sign in, a link is on its way. It works once and lasts 15 minutes.');
+      });
+    });
+    document.getElementById('auth-token').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var token = new FormData(e.target).get('token').trim(); if (!token) return;
+      api('/me', { token: token }).then(function () { enter(token, base); }, function () { say('That token was not accepted.', true); });
+    });
+    document.getElementById('auth-new').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var f = new FormData(e.target);
+      say('Creating your household');
+      api('/households', { method: 'POST', json: { name: f.get('name').trim(), guardian: { display_name: f.get('display_name').trim(), email: f.get('email').trim() }, founding: '' } })
+        .then(function (made) { enter(made.credentials.token, base); }, function (err) { say(err.message, true); });
+    });
+  }
+})();
+</script>

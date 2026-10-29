@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.blobs/
+.shortcuts/
+.pytest_cache/
+.ruff_cache/
+.extraction-cache/
+.keys/
+familyos/web_pay/node_modules/
+
+# Xcode device build output
+ios/build-device/
+
+# The founder's own notes that name real people and places; never committed
+docs/private/
+ios/Local.xcconfig

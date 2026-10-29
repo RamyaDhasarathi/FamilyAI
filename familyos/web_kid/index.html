@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>My day</title>
+<style>
+:root { --bg: #fff8ef; --card: #ffffff; --ink: #2b2118; --ink2: #6b5b4b; --line: #f0e2d0; --accent: #ff7a3d; --accent-ink: #ffffff; --ok: #2fa36b; --help: #e5484d; --shadow: 0 6px 20px -10px rgba(120, 70, 20, .35); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1b1612; --card: #272019; --ink: #fbf1e4; --ink2: #c9b8a4; --line: #3a2f25; --accent: #ff8f5a; --accent-ink: #1b1612; --ok: #5ccf97; --help: #ff6b70; --shadow: none; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.45 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+main { max-width: 560px; margin: 0 auto; padding: 20px 16px 120px; display: grid; gap: 16px; }
+h1 { font-size: 34px; margin: 8px 0 0; letter-spacing: -0.02em; } h2 { font-size: 20px; margin: 0 0 8px; }
+.sub { color: var(--ink2); margin: 0; }
+.card { background: var(--card); border-radius: 24px; padding: 18px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 12px; margin: 6px 0; border-radius: 18px; border: 2px solid var(--line); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; min-height: 60px; }
+.item .box { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); display: grid; place-items: center; flex: none; font-size: 20px; color: transparent; }
+.item.done { border-color: var(--ok); } .item.done .box { background: var(--ok); border-color: var(--ok); color: #fff; } .item.done .t { text-decoration: line-through; color: var(--ink2); }
+.item .ic { font-size: 26px; width: 34px; text-align: center; flex: none; }
+.row { display: flex; gap: 10px; align-items: center; }
+input, textarea { width: 100%; font: inherit; padding: 14px; border-radius: 16px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
+.btn { font: inherit; font-weight: 700; padding: 14px 20px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; min-height: 52px; }
+.btn.quiet { background: transparent; color: var(--ink2); border: 2px solid var(--line); font-weight: 600; min-height: 44px; padding: 8px 14px; font-size: 15px; }
+.bar { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 8px; } .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.help { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--help); color: #fff; box-shadow: 0 10px 28px -10px rgba(229, 72, 77, .7); font-size: 18px; padding: 16px 26px; border-radius: 999px; border: 0; font-weight: 800; cursor: pointer; z-index: 5; }
+.pill { display: inline-block; padding: 2px 12px; border-radius: 999px; font-size: 14px; font-weight: 700; background: var(--line); color: var(--ink2); } .pill.yes { background: var(--ok); color: #fff; } .pill.no { background: var(--help); color: #fff; }
+.entry { padding: 10px 0; border-top: 1px solid var(--line); } .entry:first-of-type { border-top: 0; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main id="app"><p class="sub">Opening your day…</p></main>
+<button class="help" id="help" hidden>I need a grown-up</button>
+<script src="boot.js"></script>
+</body>
+</html>

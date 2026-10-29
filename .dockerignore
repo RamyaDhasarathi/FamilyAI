@@ -1,0 +1,25 @@
+# What `docker build` is sent. The Dockerfile copies pyproject.toml, requirements.lock and familyos/ and nothing else, so everything that could hold
+# a secret, or only weighs the build down, stays out of the context (a build from the repository root otherwise uploads .venv and .env to the daemon).
+.git
+.github
+.venv
+venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!.env.example
+.keys
+.blobs
+.claude
+.impeccable
+.DS_Store
+ios
+docs
+tests
+poc
+tools
+evalset
+landing
+scripts
