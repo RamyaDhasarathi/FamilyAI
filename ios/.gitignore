@@ -1,7 +1,0 @@
-*.xcodeproj
-*.xcworkspace
-xcuserdata/
-DerivedData/
-build/
-build-driver/
-build-demo/
