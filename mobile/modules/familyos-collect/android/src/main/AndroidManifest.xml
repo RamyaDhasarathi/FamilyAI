@@ -1,0 +1,67 @@
+<!-- FamilyOS collecting layer on Android (famos-notes/COLLECTION_PLAN.md): what it may read. Each is asked for at run
+     time from the Data sources screen, only when the person switches that source on. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.READ_SMS" />
+  <uses-permission android:name="android.permission.READ_CALL_LOG" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+  <!-- Live SMS (CollectSmsService) and starting it again after a restart (CollectBootReceiver). -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <!-- The installed apps a person can open (Android 11+ hides them unless asked for this way). -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+  </queries>
+
+  <application>
+    <!-- Notifications from other apps; Android asks the person to allow it in Settings → Notification access. -->
+    <service
+        android:name=".CollectNotificationListener"
+        android:label="FamilyOS"
+        android:exported="false"
+        android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
+    <!-- The phone agent: reads the screen and acts in one app, only while a run goes. Allowed by the person in
+         Settings → Accessibility → FamilyOS phone agent. -->
+    <service
+        android:name=".FamilyosAgentService"
+        android:label="FamilyOS phone agent"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+        android:exported="false">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+      </intent-filter>
+      <meta-data
+          android:name="android.accessibilityservice"
+          android:resource="@xml/familyos_agent_service" />
+    </service>
+    <!-- Live SMS: sends each new SMS to FamilyOS within seconds, with a notification that always shows. -->
+    <service
+        android:name=".CollectSmsService"
+        android:exported="false"
+        android:foregroundServiceType="specialUse">
+      <property
+          android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+          android:value="Collects the person's new SMS as they arrive, for their own family assistant, while switched on in Data sources." />
+    </service>
+    <receiver
+        android:name=".CollectBootReceiver"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

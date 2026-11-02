@@ -1,0 +1,8 @@
+// Build identity, read by every target. Defaults for a fresh checkout so it builds for the simulator;
+// your own values belong in ios/Local.xcconfig (gitignored, see Local.xcconfig.example), included last so it wins.
+FAMILYOS_BUNDLE_PREFIX = com.example
+FAMILYOS_TEAM_ID =
+DEVELOPMENT_TEAM = $(FAMILYOS_TEAM_ID)
+// Where a fresh install looks for its household. Empty: the sign-in screen asks, under Advanced.
+FAMILYOS_SERVER =
+#include? "Local.xcconfig"

@@ -1,0 +1,153 @@
+/* Desktop shell (MASTER_AGENT.md §3.1, §8 "Layout"; FamilyOS.mp4 0:25, 7:20).
+   Mobile safety: every rule here targets a class only desktop components
+   render (.desk-*, .ask-bar--field, .ask-bar__attach) or sits behind
+   html.with-desk-shell / html.with-desk-rail / html.with-desk-ask, which DeskShell sets only
+   when useIsDesktopWeb() is true — and inside min-width: 1024px as well. */
+
+:root { --desk-side: 220px; --desk-rail: 64px; }
+
+@media (min-width: 1024px) {
+  /* Every page moves right of the sidebar; the floating Ask bar never covers the last row. */
+  html.with-desk-shell .page-layer { margin-left: var(--desk-side); }
+  html.with-desk-ask .page-layer { padding-bottom: 104px; }
+  html.with-desk-shell .toast-host { left: calc(var(--desk-side) + 16px); }
+  html.with-desk-ask .toast-host { bottom: 100px !important; }
+  /* Existing pages' fixed bars start at the sidebar's edge. */
+  html.with-desk-shell .agent__ask { left: var(--desk-side); }
+  html.with-desk-shell .fam-page { padding-bottom: 0; }
+  html.with-desk-shell .fam-footer { position: static; padding: 4px var(--gutter) 28px; background: none; }
+  /* Orb home: the icon rail sits over the stage's left edge; only the header moves. */
+  html.with-desk-rail .home-head { padding-left: calc(var(--desk-rail) + var(--gutter)); transition: padding-left 200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+  /* The rail opened by hover: the date and greeting (and the Home chat) move right with it, never under it. */
+  html.desk-rail-peek .home-head { padding-left: calc(var(--desk-side) + var(--gutter)); }
+  html.with-desk-rail .home-chat { transition: left 200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+  html.desk-rail-peek .home-chat { left: var(--desk-side); }
+  @media (prefers-reduced-motion: reduce) { html.with-desk-rail .home-head, html.with-desk-rail .home-chat { transition: none; } }
+  /* Home → Ask chat (HomeChat): the orb, stones and text fade and shrink away, and come back on New chat. */
+  html.with-desk-rail .home__canvas, html.with-desk-rail .home__ui {
+    transition: opacity 320ms ease, transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  html.home-chatting .home__canvas, html.home-chatting .home__ui { opacity: 0; transform: scale(0.94); pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { html.home-chatting .home__canvas, html.home-chatting .home__ui { transform: none; } }
+}
+
+/* ── Sidebar and icon rail ──────────────────────────────────────────── */
+.desk-side {
+  position: fixed; z-index: 60; top: 0; bottom: 0; left: 0; width: var(--desk-side);
+  display: flex; flex-direction: column; padding: 16px 12px 12px;
+  background: rgba(9, 10, 14, 0.94); border-right: 1px solid var(--divider);
+}
+.desk-side--rail {
+  width: var(--desk-rail); padding: 12px 10px; align-items: center;
+  background: rgba(9, 10, 14, 0.55); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.desk-side__brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 12px; border-radius: 12px; flex-shrink: 0; }
+.desk-side--rail .desk-side__brand { padding: 0 0 8px; }
+/* Home: hovering the rail opens the full sidebar over the stage (no layout shift); leaving folds it. */
+.desk-side--rail, .desk-side--peek { overflow: hidden; transition: width 200ms cubic-bezier(0.2, 0.7, 0.2, 1), background-color 200ms; }
+.desk-side--peek {
+  background: rgba(9, 10, 14, 0.97); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45);
+}
+.desk-side--peek .desk-nav__label, .desk-side--peek .desk-side__word, .desk-side--peek .desk-side__name { animation: desk-peek-in 200ms ease both; }
+@keyframes desk-peek-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .desk-side--rail, .desk-side--peek { transition: none; }
+  .desk-side--peek .desk-nav__label, .desk-side--peek .desk-side__word, .desk-side--peek .desk-side__name { animation: none; }
+}
+.desk-side__word { font-weight: 600; font-size: 1.0625rem; letter-spacing: -0.2px; color: var(--ink-strong); }
+.desk-side__groups { flex: 1; min-height: 0; width: 100%; }
+.desk-nav { padding: 6px 0; }
+.desk-nav + .desk-nav { border-top: 1px solid var(--divider); }
+.desk-nav__item {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 10px; border-radius: 10px;
+  color: var(--muted); font-weight: 500; font-size: 0.84rem; text-align: left; transition: background-color 120ms, color 120ms;
+}
+.desk-nav__item:focus-visible { outline-offset: -2px; }
+@media (hover: hover) and (pointer: fine) { .desk-nav__item:hover { background: rgba(255, 255, 255, 0.05); color: var(--ink); } }
+.desk-nav__item.is-active { background: rgba(255, 255, 255, 0.11); color: var(--ink-strong); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.desk-nav__icon { width: 18px; flex-shrink: 0; display: inline-flex; justify-content: center; }
+.desk-nav__label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desk-nav__count {
+  min-width: 20px; height: 18px; padding: 0 6px; border-radius: 9px; background: rgba(255, 255, 255, 0.1);
+  font: 600 0.6875rem/18px var(--font); color: var(--ink); text-align: center;
+}
+.desk-nav__kbd { height: 18px; font-size: 0.625rem; }
+.desk-side--rail .desk-nav { display: flex; flex-direction: column; align-items: center; }
+.desk-side--rail .desk-nav__item { width: 42px; height: 38px; padding: 0; justify-content: center; }
+/* Shorter windows: a little denser so every item fits a 900 px screen (the list scrolls below that). */
+@media (max-height: 940px) {
+  .desk-nav { padding: 4px 0; }
+  .desk-nav__item { height: 31px; }
+  .desk-side--rail .desk-nav__item { height: 32px; }
+}
+.desk-side__foot { display: flex; align-items: center; gap: 6px; width: 100%; padding-top: 10px; border-top: 1px solid var(--divider); flex-shrink: 0; }
+.desk-side--rail .desk-side__foot { justify-content: center; }
+.desk-side__me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 5px; border-radius: 12px; }
+.desk-side--rail .desk-side__me { flex: 0 0 auto; }
+@media (hover: hover) and (pointer: fine) { .desk-side__me:hover { background: rgba(255, 255, 255, 0.05); } }
+.desk-side__avatar { width: 30px; height: 30px; border-radius: 15px; background: rgba(255, 255, 255, 0.14); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+.desk-side__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desk-side__out { width: 34px; height: 34px; border-radius: 17px; }
+
+/* ── Floating Ask bar ───────────────────────────────────────────────── */
+.desk-ask {
+  position: fixed; z-index: 40; bottom: 24px;
+  left: calc(var(--desk-side) + (100vw - var(--desk-side)) / 2); transform: translateX(-50%);
+  width: min(640px, calc(100vw - var(--desk-side) - 48px));
+}
+.desk-ask .ask-bar { background: rgba(26, 29, 38, 0.9); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 var(--glass-highlight); }
+.ask-bar--field .ask-bar__input { cursor: text; }
+.ask-bar--field:focus-within { border-color: rgba(255, 255, 255, 0.28); }
+.ask-bar__field { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: none; color: var(--ink); padding: 0; }
+.ask-bar__field::placeholder { color: var(--muted); }
+.ask-bar__attach { width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: var(--muted); margin-right: 4px; flex-shrink: 0; }
+@media (hover: hover) and (pointer: fine) { .ask-bar__attach:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); } }
+
+/* ── ⌘K palette ─────────────────────────────────────────────────────── */
+.desk-palette-root { position: fixed; inset: 0; z-index: 250; }
+.desk-palette {
+  position: absolute; left: 0; right: 0; top: 13vh; margin: 0 auto; width: min(640px, calc(100vw - 48px));
+  display: flex; flex-direction: column; max-height: 74vh; overflow: hidden; border-radius: 22px; background-color: rgba(26, 29, 38, 0.96);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 var(--glass-highlight);
+}
+.desk-palette__bar { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 10px 0 18px; border-bottom: 1px solid var(--divider); flex-shrink: 0; }
+.desk-palette__glass { color: var(--muted); flex-shrink: 0; }
+.desk-palette__input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: none; color: var(--ink); font-size: 1rem; }
+.desk-palette__input::placeholder { color: var(--muted); }
+.desk-palette__mic { width: 38px; height: 38px; border-radius: 19px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.desk-palette__mic.is-on { color: var(--pill-primary-ink); background: var(--pill-primary-bg); }
+@media (hover: hover) and (pointer: fine) { .desk-palette__mic:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); } }
+.desk-palette__list { padding: 8px; overflow-y: auto; min-height: 0; }
+.desk-palette__group { padding: 10px 12px 4px; margin: 0; }
+.desk-palette__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 12px; text-align: left; color: var(--ink); }
+.desk-palette__row:focus-visible { outline-offset: -2px; }
+.desk-palette__row.is-active { background: rgba(255, 255, 255, 0.08); }
+@media (hover: hover) and (pointer: fine) { .desk-palette__row:hover { background: rgba(255, 255, 255, 0.06); } }
+.desk-palette__icon { color: var(--muted); flex-shrink: 0; }
+.desk-palette__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.desk-palette__sub { font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desk-palette__enter { color: var(--muted); flex-shrink: 0; }
+.desk-palette__foot { padding: 10px 18px 14px; border-top: 1px solid var(--divider); font-size: 0.72rem; color: var(--dim-text); flex-shrink: 0; }
+
+/* "Show me": rows whose data-desk-id is flashed glow briefly. */
+@keyframes desk-flash {
+  0%, 60% { box-shadow: 0 0 0 2px var(--desk-flash-color, #fff), 0 0 24px color-mix(in srgb, var(--desk-flash-color, #fff) 45%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.desk-flash { animation: desk-flash 2.6s ease-out both; border-radius: 12px; }
+
+/* Orb home on desktop: the crystal opens Today (only rendered with pressMode="navigate"). */
+.core-hit--nav { cursor: pointer; pointer-events: auto; }
+.core-hit--nav:active { cursor: grabbing; }
+.core-hit__tip {
+  position: absolute; left: 50%; top: calc(100% + 6px); transform: translate(-50%, 4px); width: max-content; max-width: 280px;
+  padding: 8px 12px; border-radius: 12px; background: rgba(24, 27, 35, 0.94); border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 2px; text-align: left;
+  opacity: 0; visibility: hidden; transition: opacity 120ms, transform 120ms; pointer-events: none; z-index: 3;
+}
+.core-hit__tip .t-small-strong { font-size: 0.75rem; }
+.core-hit--nav:hover .core-hit__tip, .core-hit--nav:focus-visible .core-hit__tip { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+
+/* Agent dashboards: room for the desktop extras under the existing panel. */
+.desk-agent-extras { position: relative; max-width: 1112px; margin: 0 auto; }
+.desk-agent-extras:empty { display: none; }

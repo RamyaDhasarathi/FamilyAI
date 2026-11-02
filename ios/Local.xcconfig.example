@@ -1,0 +1,7 @@
+// Copy to ios/Local.xcconfig (gitignored) and fill in. Changing the prefix later changes the app's bundle id,
+// app group and Keychain service, so a phone that already has the app would be signed out: pick once.
+FAMILYOS_BUNDLE_PREFIX = com.yourname
+FAMILYOS_TEAM_ID = ABCDE12345
+
+// Optional: the address a fresh install signs in to, so nobody types it. An xcconfig treats // as a comment, hence the $() between the slashes.
+// FAMILYOS_SERVER = https:/$()/your-host.example

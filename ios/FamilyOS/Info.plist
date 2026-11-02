@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Read by Kit/Server.swift. Expanded from Config.xcconfig / Local.xcconfig, so no identifier is written in code. -->
+	<key>FamilyOSAppGroup</key>
+	<string>group.$(FAMILYOS_BUNDLE_PREFIX).familyos</string>
+	<!-- Where a fresh install looks for its household, so the sign-in screen has no address to type. Empty means ask (Advanced). -->
+	<key>FamilyOSServer</key>
+	<string>$(FAMILYOS_SERVER)</string>
+	<key>FamilyOSKeychainService</key>
+	<string>$(FAMILYOS_BUNDLE_PREFIX).familyos</string>
+	<key>CFBundleDisplayName</key>
+	<string>FamilyOS</string>
+	<key>CFBundleName</key>
+	<string>FamilyOS</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<!-- Keeping the phone's reminders fresh when the app is closed: the system wakes the
+	     app now and then to ask the server what is coming (BGAppRefreshTask). -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>location</string>
+	</array>
+	<!-- Location sharing, which a member switches on for themselves in Settings. Only the latest
+	     point is kept on the server, only for the household's other adults who share too. -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>So Ask can answer about your own steps, sleep, resting heart rate and workouts. One summary per day is sent to your own FamilyOS server, only if you switch it on in Settings, and only you can see it. It is not medical advice.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>So you can say a question or a task instead of typing it. The recording is sent to your own FamilyOS server to be turned into words, and is not kept.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>FamilyOS shares where you are with the other adults in your household who share too, only if you switch it on in Settings.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>So the adults in your household who share too can see that you reached home or the office, without opening the app. You can switch it off in Settings at any time.</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).reminders</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>familyos</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- HTTPS only. The phone reaches the server through Tailscale Serve or
+		     a real host, both TLS; plain http is allowed only to local
+		     addresses, which is how the simulator reaches a dev server. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,51 @@
+/* Ask page (MASTER_AGENT.md §7 Phase 3 "Ask", §8; FamilyOS.mp4 4:40–5:40).
+   `ak-` classes are rendered only by the desktop Ask page; the bubbles,
+   chips and input reuse the app's chat classes. */
+
+.ak-page .desk-page__main { min-height: calc(100dvh - 210px); gap: 0; }
+.ak-convo { flex: 1; width: 100%; max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; }
+.ak-list { padding: 4px 0 12px; }
+.ak-list .bubble { max-width: 86%; }
+.ak-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 0; text-align: center; }
+.ak-empty .t-headline { font-weight: 600; font-size: 1.375rem; margin-top: 6px; }
+.ak-empty .t-small { max-width: 46ch; }
+
+/* Composer: stays at the bottom of the window while the conversation scrolls. */
+.ak-composer {
+  position: sticky; bottom: 0; z-index: 5; width: 100%; max-width: 780px; margin: 0 auto; padding: 14px 0 16px;
+  background: linear-gradient(to bottom, transparent, var(--bg, #000) 34%);
+}
+.ak-composer .chips-bar { padding: 0 0 10px; flex-wrap: wrap; overflow: visible; }
+.ak-input { margin: 0; background: rgba(28, 31, 40, 0.92); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45); }
+.ak-input .chat-input__field { color: var(--ink); font-size: 0.9375rem; }
+.ak-input .chat-input__send:disabled { opacity: 0.4; }
+.ak-foot { margin-top: 10px; text-align: center; font-size: 0.72rem; color: var(--dim-text); }
+.ak-page .toast-host { bottom: 150px !important; }
+
+/* Answers: citation chips and action cards inside our "theirs" bubble. */
+.ak-answer { display: flex; flex-direction: column; gap: 10px; white-space: normal; }
+.ak-answer__text { margin: 0; white-space: pre-wrap; }
+.ak-cite {
+  position: relative; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; margin: 0 1px 0 4px; border-radius: 6px; vertical-align: 1px;
+  font: 600 0.6875rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: #cfc8ff;
+  background: color-mix(in srgb, var(--violet) 22%, transparent); border: 1px solid color-mix(in srgb, var(--violet) 40%, transparent);
+}
+.ak-cite::after { content: ''; position: absolute; inset: -8px -3px; }
+@media (hover: hover) and (pointer: fine) { .ak-cite:hover { color: #fff; background: color-mix(in srgb, var(--violet) 40%, transparent); } }
+.ak-suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.ak-actions { display: flex; flex-direction: column; gap: 8px; }
+.ak-actions__label { color: #b9b0ff; }
+.ak-card { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: 14px; background: rgba(0, 0, 0, 0.3); border: 1px dashed rgba(255, 255, 255, 0.22); }
+.ak-card.is-done { border-style: solid; border-color: color-mix(in srgb, var(--done) 40%, transparent); }
+.ak-card__what { flex: 1; min-width: 0; margin: 0; line-height: 1.45; }
+.ak-card__title { color: var(--ink-strong); font-weight: 600; }
+.ak-card__src { font-size: 0.72rem; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.3); }
+.ak-card__result { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ak-card__check { color: var(--done); }
+
+/* Desktop Home turned into the chat (HomeChat): the Ask page over the stage, right of the icon rail. */
+.home-chat {
+  position: fixed; top: 0; right: 0; bottom: 0; left: var(--desk-rail); z-index: 30;
+  overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; user-select: text; -webkit-user-select: text;
+}
+.home-chat .ak-composer { background: linear-gradient(to bottom, transparent, #000 34%); }

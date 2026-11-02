@@ -1,0 +1,106 @@
+/* Today dashboard (MASTER_AGENT.md §7 Phases 1–2). `dt-` classes are only
+   rendered by desktop/today (the mobile Today sheet keeps its `.today-*`
+   classes). Layout follows the main column's width (container queries), so
+   the same page works as one column below 1024 px. */
+
+.dt-page .desk-page__main { container-type: inline-size; }
+/* Enter: a short fade-up (≤300 ms); globals.css turns it off under reduced motion. */
+.dt-page .desk-page__body { animation: page-in 260ms var(--ease-out) both; }
+.dt-h2 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px; }
+
+/* Member cards */
+.dt-members { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@container (max-width: 560px) { .dt-members { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.dt-member { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; min-height: 148px; padding: 14px 8px 12px; text-align: center; border-radius: 18px; transition: border-color 120ms, background-color 120ms; }
+@media (hover: hover) and (pointer: fine) { .dt-member:hover { border-color: rgba(255, 255, 255, 0.2); background-color: var(--glass-fill-strong); } }
+.dt-member__avatar {
+  width: 42px; height: 42px; border-radius: 21px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+  border: 2px solid var(--glass-border); background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05)); color: #fff; font-weight: 600; font-size: 0.95rem;
+}
+.dt-member__avatar--add { border-style: dashed; color: var(--muted); background: none; }
+.dt-member--add { justify-content: center; color: var(--muted); }
+.dt-member__status { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; }
+.dt-member__line { font-size: 0.72rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* FamilyOS noticed */
+.dt-noticed { padding: 18px 20px; background-image: linear-gradient(135deg, rgba(128, 115, 255, 0.13), rgba(97, 184, 255, 0.05) 60%, transparent); }
+.dt-noticed.is-resolved { background-image: linear-gradient(135deg, rgba(63, 203, 126, 0.12), transparent 60%); }
+.dt-noticed__label { display: flex; align-items: center; gap: 6px; color: #b9b0ff; margin-bottom: 8px; }
+.dt-noticed__msg { margin-top: 6px; max-width: 62ch; }
+.dt-noticed__check { color: var(--done); vertical-align: -2px; }
+.dt-noticed__actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.dt-proposal { margin-top: 14px; padding: 14px 16px; border-radius: 16px; border: 1px dashed rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.04); display: flex; flex-direction: column; gap: 6px; }
+.dt-proposal .dt-noticed__actions { margin-top: 6px; }
+
+/* Hero column + Happening today */
+.dt-grid { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@container (max-width: 640px) { .dt-grid { grid-template-columns: minmax(0, 1fr); } }
+.dt-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.dt-hero { padding: 18px; background-image: linear-gradient(225deg, rgba(128, 115, 255, 0.14), transparent 55%); }
+.dt-hero__top { display: flex; align-items: center; gap: 12px; }
+.dt-hero__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dt-hero__count { font-size: 1.625rem; }
+.dt-hero__ring { margin-top: 10px; }
+.dt-chips { margin-top: 12px; border-top: 1px solid var(--divider); padding-top: 6px; }
+.dt-chip { display: flex; align-items: center; gap: 10px; padding: 9px 6px; border-radius: 10px; min-width: 0; }
+@media (hover: hover) and (pointer: fine) { .dt-chip:hover { background: rgba(255, 255, 255, 0.05); } .dt-chip:hover .dt-chip__chev { color: var(--ink); } }
+.dt-chip__name { width: 78px; flex-shrink: 0; }
+.dt-chip__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dt-chip__chev { color: var(--dim); flex-shrink: 0; }
+.dt-tile { padding: 14px 16px; }
+.dt-tile__value { margin: 6px 0 4px; font-size: 1.5rem; }
+.dt-tile__title { margin: 6px 0 2px; }
+.dt-tile__first { margin-top: 6px; color: var(--ink); }
+
+.dt-happening { padding: 16px 14px 10px; min-width: 0; }
+.dt-happening__head { display: flex; flex-direction: column; gap: 10px; padding: 0 6px 6px; }
+.dt-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.dt-filter {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border-radius: 14px; position: relative;
+  border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.04); font-weight: 600; font-size: 0.72rem; color: var(--muted);
+}
+.dt-filter::after { content: ''; position: absolute; inset: -6px -2px; }
+@media (hover: hover) and (pointer: fine) { .dt-filter:hover { color: var(--ink); border-color: rgba(255, 255, 255, 0.22); } }
+.dt-filter.is-on { background: var(--pill-primary-bg); color: var(--pill-primary-ink); border-color: transparent; }
+.dt-anytime { padding: 14px 8px 2px; }
+.dt-row + .dt-row { border-top: 1px solid var(--divider); }
+.dt-row__head { display: grid; grid-template-columns: 64px 10px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 10px 8px; text-align: left; border-radius: 12px; }
+@media (hover: hover) and (pointer: fine) { .dt-row__head:hover { background: rgba(255, 255, 255, 0.04); } }
+.dt-row__head:focus-visible { outline-offset: -2px; }
+.dt-row__time { white-space: nowrap; }
+.dt-row__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dt-row__agent { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.dt-row__label { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 0.6875rem; color: var(--ink); background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 5px; }
+.dt-row__title { overflow-wrap: anywhere; }
+.dt-row.is-past .dt-row__time, .dt-row.is-past .dt-row__title { color: var(--dim-text); }
+.dt-row__more { display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; white-space: nowrap; }
+.dt-row__chev { display: inline-flex; }
+.dt-row__details { overflow: hidden; padding: 0 8px 0 102px; }
+.dt-row__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 0 14px; }
+.dt-row__notice { margin-left: 4px; }
+@container (max-width: 480px) { .dt-row__details { padding-left: 8px; } }
+
+/* Needs someone */
+.dt-needs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@container (max-width: 520px) { .dt-needs { grid-template-columns: minmax(0, 1fr); } }
+.dt-need { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 14px 16px; border-radius: 18px; transition: border-color 120ms, background-color 120ms; }
+@media (hover: hover) and (pointer: fine) { .dt-need:hover { border-color: rgba(255, 255, 255, 0.2); background-color: var(--glass-fill-strong); } }
+.dt-need__top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.dt-need__title { margin-top: 2px; }
+.dt-needs__all { margin-top: 12px; }
+
+/* Rail: Coming up, Order again */
+.dt-coming__day + .dt-coming__day { margin-top: 10px; }
+.dt-coming__label { margin: 0 0 4px; }
+.dt-coming__link { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; padding: 6px 6px; border-radius: 10px; }
+@media (hover: hover) and (pointer: fine) { a.dt-coming__link:hover { background: rgba(255, 255, 255, 0.05); } }
+.dt-coming__slot { font-size: 0.72rem; padding-top: 1px; }
+.dt-coming__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dt-coming__dot { margin-right: 6px; vertical-align: 1px; }
+.dt-coming__sub { font-size: 0.72rem; }
+.dt-order__row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.dt-order__row + .dt-order__row { border-top: 1px solid var(--divider); }
+.dt-order__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dt-order__text .t-small { font-size: 0.72rem; }
+.dt-order__store { text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.25); text-underline-offset: 2px; }
+.dt-order__btn { height: 28px; padding: 0 10px; font-size: 0.72rem; gap: 4px; }
