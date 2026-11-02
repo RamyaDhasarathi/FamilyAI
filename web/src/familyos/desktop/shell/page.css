@@ -1,0 +1,65 @@
+/* DeskPage template, DeskCard and status chips (MASTER_AGENT.md §8). Classes
+   are only rendered by desktop pages; below 1024 px the same page is one
+   column (rail under the content). */
+
+.desk-page { position: relative; min-height: 100dvh; padding: 0 var(--gutter) 40px; }
+.desk-page__glow { position: absolute; left: 0; right: 0; top: 0; height: 80vh; pointer-events: none; }
+.desk-page__top { position: relative; display: flex; align-items: center; justify-content: space-between; max-width: 1100px; height: 76px; margin: 0 auto; padding-top: 8px; }
+.desk-page__spacer { width: 44px; }
+.desk-page__gem { display: flex; justify-content: center; }
+.desk-page__head { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; max-width: 1100px; margin: 0 auto; padding: 32px 0 22px; }
+.desk-page__top + .desk-page__head { padding-top: 2px; }
+.desk-page__titles { min-width: 0; }
+.desk-page__title { display: flex; align-items: center; gap: 12px; }
+.desk-page__icon {
+  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--desk-accent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--desk-accent) 26%, transparent);
+}
+.desk-page__desc { margin-top: 12px; max-width: 70ch; }
+.desk-page__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.desk-page__body { position: relative; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (min-width: 1024px) { .desk-page--rail .desk-page__body { grid-template-columns: minmax(0, 1fr) 300px; } }
+.desk-page__main { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.desk-page__rail { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+@media (max-width: 639px) { .desk-page__head { flex-direction: column; align-items: flex-start; } }
+
+/* Cards */
+.desk-card { position: relative; padding: 16px 18px 18px; min-width: 0; }
+.desk-card__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; min-width: 0; }
+.desk-card__title { font-size: 0.9375rem; }
+.desk-card__sub { font-size: 0.75rem; }
+.desk-card__action { margin-left: auto; display: inline-flex; gap: 6px; }
+
+/* Status chips: tone colours from the existing palette, always with text. */
+.desk-chip {
+  --tone: #ffffff;
+  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border-radius: 6px; white-space: nowrap; flex-shrink: 0;
+  font: 600 0.6875rem/1 var(--font); color: color-mix(in srgb, var(--tone) 82%, #fff);
+  background: color-mix(in srgb, var(--tone) 16%, transparent); border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+}
+.desk-chip--missed { --tone: var(--severity-urgent); }
+.desk-chip--overdue { --tone: var(--severity-headsup); }
+.desk-chip--today { --tone: var(--agent-calendar); }
+.desk-chip--changed { --tone: var(--severity-insight); }
+.desk-chip--proposed { --tone: var(--severity-headsup); }
+.desk-chip--approved { --tone: var(--done); }
+.desk-chip--consented { --tone: var(--done); }
+.desk-chip--done { --tone: var(--muted); }
+.desk-chip--cancelled { --tone: var(--muted); text-decoration: line-through; }
+.desk-chip--draft { --tone: var(--dust); }
+.desk-chip--guardian { --tone: var(--agent-education); }
+.desk-chip--adult { --tone: var(--agent-calendar); }
+.desk-chip--child { --tone: var(--agent-household); }
+.desk-chip--neutral { --tone: #ffffff; color: var(--ink); background: rgba(255, 255, 255, 0.07); border-color: var(--glass-border); }
+
+/* Small text links ("the notice", "Open Finance ›"). */
+.desk-link { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 0.75rem; color: var(--ink); border-radius: 6px; }
+@media (hover: hover) and (pointer: fine) { .desk-link:hover { text-decoration: underline; text-underline-offset: 3px; } }
+
+/* Empty states */
+.desk-empty { display: flex; align-items: center; gap: 10px; padding: 18px 4px; color: var(--muted); }
+
+/* Notice drawer (stub) and stub pages */
+.desk-notice { display: flex; flex-direction: column; gap: 12px; padding: 0 24px 24px; }
+.desk-notice__list { display: flex; flex-direction: column; gap: 8px; }
+.desk-notice__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); }

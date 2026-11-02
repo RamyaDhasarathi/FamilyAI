@@ -1,0 +1,34 @@
+/* Agent Deep Layer (AGENT_WEB.md §8.7). Phone: the mobile screen. Tablet:
+   full width, content max 720. Desktop: two columns, max 1080. */
+.agent { position: relative; min-height: 100dvh; background: #000; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.agent__glow { position: fixed; inset: 0; pointer-events: none; }
+.agent__top {
+  position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between;
+  height: calc(72px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 16px 0; max-width: 1112px; margin: 0 auto;
+}
+.agent__gem { display: flex; justify-content: center; }
+.agent__top-spacer { width: 44px; }
+.agent__panel {
+  position: relative; margin: 0 auto; max-width: 1112px; min-height: calc(100dvh - 72px);
+  border: 1px solid var(--glass-border); border-bottom: 0; border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: linear-gradient(rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)); padding: 22px 16px 24px;
+}
+@media (min-width: 640px) {
+  .agent__panel { max-width: 752px; padding: 28px 16px 32px; border-radius: var(--radius-sheet); border-bottom: 1px solid var(--glass-border); min-height: 0; margin-bottom: 24px; }
+}
+@media (min-width: 1024px) {
+  .agent__panel { max-width: 1112px; padding: 32px 32px 36px; }
+  .agent__top { padding-left: 32px; padding-right: 32px; }
+}
+.agent__head { margin-bottom: 16px; }
+.agent__subtitle { margin-top: 12px; }
+.agent__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.agent__col { min-width: 0; }
+.agent__cols .agent__timeline { margin-top: -2px; }
+.agent__cols .agent__section { margin-top: 0; }
+.agent__section { margin-top: 22px; margin-bottom: 2px; }
+.agent__ask {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; padding: 28px 16px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.92) 50%);
+}
+.agent__ask .ask-bar { max-width: 640px; margin: 0 auto; }
