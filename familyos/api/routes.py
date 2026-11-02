@@ -1568,6 +1568,15 @@ async def google_sign_in(response: Response, native: bool = False):
     return {"url": begun["url"]}
 
 
+def _collect_after_google(address: str | None) -> None:
+    """Our collecting layer: start reading Gmail, Calendar and Tasks for this address once Google said yes."""
+    if settings.google_sign_in_collect and address:
+        from familyos.collect import google_data
+        from familyos.collect import store as collect_store
+        if collect_store.google_account(address) is not None:
+            google_data.start(address)
+
+
 @router.get("/sign-in/google/callback", include_in_schema=False)
 async def google_sign_in_callback(request: Request, state: str = "", code: str = "", error: str | None = None):
     # Back to where it began either way: the console, or the phone app
@@ -1581,8 +1590,10 @@ async def google_sign_in_callback(request: Request, state: str = "", code: str =
         # Not the browser that began this: refused before the state is spent.
         return RedirectResponse(f"{home}?signin=failed")
     try:
-        _, token = await identity.complete_google_sign_in(state, code)
+        signed_in, token = await identity.complete_google_sign_in(state, code)
+        _collect_after_google(signed_in.get("email"))
     except identity.NoHouseholdYet as exc:
+        _collect_after_google(exc.email)
         # Nothing to sign into yet, so the console opens Start a household
         # with the verified address already in it. The address rides in the
         # fragment for the same reason the token does: it never reaches a
@@ -1610,6 +1621,16 @@ async def dev_sign_in(body: SignInRequest, request: Request, response: Response)
         session_cookie.set_for(response, request, token)
         token = None
     return SignedIn(member=Member(**member), token=token)
+
+
+@router.post("/sign-up/dev", status_code=200, include_in_schema=False)
+async def dev_sign_up(body: SignInRequest):
+    """Development only (FAMILYOS_DEV_SIGN_IN): the founding ticket for a new
+    address, handed back instead of mailed; POST /households spends it.
+    Answers 404 when off, as if it did not exist."""
+    if not settings.dev_sign_in:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    return {"founding": await identity.dev_founding(body.email)}
 
 
 @router.post("/sign-in/redeem", response_model=SignedIn, status_code=200, tags=["household"],

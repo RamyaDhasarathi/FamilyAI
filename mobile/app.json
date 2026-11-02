@@ -58,7 +58,9 @@
           "cameraPermission": "FamilyOS uses the camera to take a family member's profile picture.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-background-task"
     ]
   }
 }

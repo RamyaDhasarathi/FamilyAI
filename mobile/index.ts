@@ -1,4 +1,6 @@
 import { registerRootComponent } from 'expo';
+// The collecting layer's background task must be defined before anything else runs (expo-task-manager).
+import './src/familyos/services/collectTask';
 
 import App from './App';
 

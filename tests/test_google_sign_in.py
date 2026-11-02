@@ -20,6 +20,8 @@ def oauth(monkeypatch):
     monkeypatch.setattr(settings, "google_client_secret", "client-secret")
     monkeypatch.setattr(settings, "google_sign_in_redirect_uri",
                         "http://localhost:8000/v1/sign-in/google/callback")
+    # The founder's sign-in, whatever a developer's .env says about our collecting layer (tests/test_collect_google.py).
+    monkeypatch.setattr(settings, "google_sign_in_collect", False)
 
 
 def _id_token(email="amma@example.com", *, verified=True, aud=CLIENT):

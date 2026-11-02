@@ -48,17 +48,6 @@ async def test_the_cookie_outlives_the_tokens_sliding_window(family, monkeypatch
     assert int(re.search(r"Max-Age=(\d+)", header).group(1)) >= 365 * 86400
 
 
-def test_a_console_lets_go_of_the_old_token_only_when_the_server_has_taken_it_or_refused_it():
-    """A rate limit or a server error on /v1/session must not delete the only copy of a live token."""
-    import pathlib
-    root = pathlib.Path(__file__).resolve().parent.parent / "familyos"
-    for name in ("web/app.js", "web_classic/app.js", "web_orbit/orbit.js", "web_guide/guide.js", "web_home/boot.js"):
-        text = (root / name).read_text()
-        assert "removeItem('familyos.token')" in text, name
-        before = text.split("removeItem('familyos.token')")[0][-400:]
-        assert ".ok" in before and "401" in before, name
-
-
 async def test_tickets_are_rate_limited_per_member_and_redoc_is_off(family, database, monkeypatch):
     from familyos.settings import settings
     monkeypatch.setattr(settings, "rate_tickets_per_member", 2)

@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "expo.modules.familyoscollect.familyos-collect-release-11:/xml/familyos_agent_service.xml",
+        "source": "expo.modules.familyoscollect.familyos-collect-main-12:/xml/familyos_agent_service.xml"
+    }
+]

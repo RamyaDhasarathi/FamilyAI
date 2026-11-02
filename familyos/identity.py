@@ -305,7 +305,17 @@ async def google_sign_in_url(*, native: bool = False) -> dict:
             "INSERT INTO google_sign_in_states (state, code_verifier) VALUES ($1, $2)", state, verifier)
     return {"state": state,
             "url": google.authorize_url(client_id=client_id, redirect_uri=settings.google_sign_in_redirect_uri,
-                                        state=state, challenge=challenge, wanted=google.SIGN_IN_SCOPES)}
+                                        state=state, challenge=challenge, wanted=_sign_in_scopes())}
+
+
+def _sign_in_scopes() -> tuple[str, ...]:
+    """The founder's sign-in asks for the address only. With our collecting layer on (settings.google_sign_in_collect,
+    decided 30 Oct 2026) it also asks to read Gmail, Calendar and Tasks, so one Google consent covers both."""
+    from familyos.intake import google
+    if not settings.google_sign_in_collect:
+        return google.SIGN_IN_SCOPES
+    from familyos.collect import google_data
+    return google.SIGN_IN_SCOPES + google_data.COLLECT_SCOPES
 
 
 def began_in_app(state: str | None) -> bool:
@@ -343,6 +353,11 @@ async def complete_google_sign_in(state: str, code: str, *, transport=None) -> t
         raise LinkNotUsable("Google has not verified that address, so it cannot be used to sign in")
 
     address = token_in.email.strip().lower()
+    if settings.google_sign_in_collect and token_in.refresh_token:
+        # Our collecting layer: keep the permission (sealed, in the local cache -- not the database), whether or not this
+        # address has a family yet; the collection itself is started by the route.
+        from familyos.collect import store as collect_store
+        collect_store.keep_google(address, token_in.refresh_token, token_in.scopes)
     async with pool().acquire() as conn, conn.transaction():
         member = await conn.fetchrow(
             "SELECT id, household_id, display_name, role, email, phone, date_of_birth, created_at "
@@ -421,6 +436,18 @@ async def dev_sign_in(email: str) -> tuple[dict, str]:
         async with conn.transaction():
             raw = await _issue_link(conn, member_id, purpose="sign_in")
     return await redeem(raw)
+
+
+async def dev_founding(email: str) -> str:
+    """Start a household by address alone (FAMILYOS_DEV_SIGN_IN): the ticket
+    the founding mail would carry, handed back instead of mailed, until mail is
+    connected. An address any household already uses is told to log in."""
+    address = (email or "").strip().lower()
+    async with pool().acquire() as conn:
+        if await conn.fetchval("SELECT 1 FROM members WHERE lower(email) = $1 LIMIT 1", address):
+            raise Invalid("that address is already in a household; log in instead")
+        async with conn.transaction():
+            return await issue_founding(conn, address)
 
 
 async def issue_founding(conn: asyncpg.Connection, email: str) -> str:

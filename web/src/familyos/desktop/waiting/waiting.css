@@ -1,0 +1,61 @@
+/* Waiting on you (MASTER_AGENT.md §7 Phase 3, §8; FamilyOS.mp4 4:20–4:40).
+   `wt-` classes are rendered only by desktop pages (Waiting, and the kind
+   icons / ✕ buttons the Inbox and Ask reuse). */
+
+.wt-page .desk-page__body { animation: page-in 260ms var(--ease-out) both; }
+
+/* Kind icon and the ✕ button (shared). */
+.wt-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; }
+.wt-x {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 16px; flex-shrink: 0;
+  color: var(--muted); background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); transition: color 120ms, background-color 120ms;
+}
+.wt-x::after { content: ''; position: absolute; inset: -6px; }
+@media (hover: hover) and (pointer: fine) { .wt-x:hover { color: var(--ink); background: rgba(255, 255, 255, 0.12); } }
+.wt-notice { color: var(--ink); text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.3); text-underline-offset: 3px; border-radius: 4px; }
+@media (hover: hover) and (pointer: fine) { .wt-notice:hover { text-decoration-color: var(--ink); } }
+
+/* Missed summary */
+.wt-missed { padding: 16px 18px 12px; background-image: linear-gradient(135deg, color-mix(in srgb, var(--severity-urgent) 10%, transparent), transparent 55%); }
+.wt-missed__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.wt-missed__row { display: flex; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 12px; }
+.wt-missed__row + .wt-missed__row { border-top: 1px solid var(--divider); }
+.wt-missed__more { padding: 6px 8px 2px; }
+
+/* Groups and rows */
+.wt-groups { display: flex; flex-direction: column; gap: 18px; }
+.wt-group__label { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 8px; padding: 3px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
+.wt-group__label--overdue { color: color-mix(in srgb, var(--severity-headsup) 85%, #fff); background: color-mix(in srgb, var(--severity-headsup) 14%, transparent); }
+.wt-group__count { opacity: 0.75; }
+.wt-rows { display: flex; flex-direction: column; gap: 8px; }
+.wt-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px 12px 16px; border-radius: 18px; transition: border-color 120ms, background-color 120ms; }
+@media (hover: hover) and (pointer: fine) { .wt-row:hover { border-color: rgba(255, 255, 255, 0.18); } }
+.wt-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.wt-row__title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; overflow-wrap: anywhere; }
+.wt-row__meta { font-size: 0.78rem; }
+.wt-row__line { font-size: 0.75rem; color: var(--dim-text); }
+.wt-row__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* Rail: To-dos, Worth doing, You will be told */
+.wt-todo { display: flex; align-items: flex-start; gap: 10px; padding: 8px 4px; border-radius: 10px; }
+.wt-todo + .wt-todo { border-top: 1px solid var(--divider); }
+.wt-todo__box {
+  position: relative; width: 18px; height: 18px; margin-top: 1px; border-radius: 5px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.35); color: var(--pill-primary-ink); background: transparent; transition: background-color 120ms, border-color 120ms;
+}
+.wt-todo__box::after { content: ''; position: absolute; inset: -9px; }
+.wt-todo.is-done .wt-todo__box { background: var(--done); border-color: var(--done); }
+@media (hover: hover) and (pointer: fine) { .wt-todo__box:hover { border-color: rgba(255, 255, 255, 0.7); } }
+.wt-todo__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wt-todo__title { overflow-wrap: anywhere; }
+a.wt-todo__title { border-radius: 4px; }
+@media (hover: hover) and (pointer: fine) { a.wt-todo__title:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.4); } }
+.wt-todo.is-done .wt-todo__title { text-decoration: line-through; color: var(--muted); }
+.wt-todo__meta { font-size: 0.72rem; }
+.wt-more { margin-top: 8px; }
+.wt-side-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
+.wt-side-row + .wt-side-row { border-top: 1px solid var(--divider); }
+.wt-side-row .t-small { font-size: 0.75rem; }
+.wt-side-row a.t-small-strong { border-radius: 4px; }
+@media (hover: hover) and (pointer: fine) { .wt-side-row a.t-small-strong:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.4); } }
+.wt-told__from { font-size: 0.7rem !important; color: var(--dim-text); }

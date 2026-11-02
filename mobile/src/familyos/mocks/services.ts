@@ -46,6 +46,7 @@ export const mockService: FamilyOSService = {
     latency(threadId === 'home' ? suggestionsFor('home') : agentDetails[threadId as AgentId].chips, 0, 0),
   setSummaryMode: () => latency({ ok: true, message: 'Saved' }, 50, 150),
   logIn: () => latency({ ok: true, message: 'Welcome back' }, 400, 700),
+  signUp: () => latency({ ok: true, message: 'Your family is ready' }, 500, 900),
   logOut: () => latency({ ok: true, message: 'Logged out' }, 150, 300),
 };
 

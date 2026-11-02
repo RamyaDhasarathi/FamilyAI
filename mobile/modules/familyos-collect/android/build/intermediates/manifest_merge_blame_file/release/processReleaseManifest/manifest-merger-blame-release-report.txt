@@ -1,0 +1,147 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<!--
+3 FamilyOS collecting layer on Android (famos-notes/COLLECTION_PLAN.md): what it may read. Each is asked for at run
+4     time from the Data sources screen, only when the person switches that source on.
+5-->
+6<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+7    package="expo.modules.familyoscollect" >
+8
+9    <uses-sdk android:minSdkVersion="24" />
+9-->INJECTED
+9-->INJECTED
+10
+11    <uses-permission android:name="android.permission.READ_SMS" />
+11-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:4:3-65
+11-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:4:20-62
+12    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+12-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:5:3-70
+12-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:5:20-67
+13    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+13-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:6:3-77
+13-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:6:20-74
+14    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+14-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:7:3-79
+14-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:7:20-76
+15    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+15-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:8:3-74
+15-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:8:20-71
+16    <uses-permission
+16-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:9:3-105
+17        android:name="android.permission.READ_EXTERNAL_STORAGE"
+17-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:9:20-75
+18        android:maxSdkVersion="32" />
+18-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:9:76-102
+19    <!-- Live SMS (CollectSmsService) and starting it again after a restart (CollectBootReceiver). -->
+20    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+20-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:11:3-75
+20-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:11:20-72
+21    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+21-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:12:3-87
+21-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:12:20-84
+22    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+22-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:13:3-79
+22-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:13:20-76
+23    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+23-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:14:3-75
+23-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:14:20-72
+24
+25    <!-- The installed apps a person can open (Android 11+ hides them unless asked for this way). -->
+26    <queries>
+26-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:17:3-22:13
+27        <intent>
+27-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:18:5-21:14
+28            <action android:name="android.intent.action.MAIN" />
+28-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:19:7-59
+28-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:19:15-56
+29
+30            <category android:name="android.intent.category.LAUNCHER" />
+30-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:20:7-67
+30-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:20:17-64
+31        </intent>
+32    </queries>
+33
+34    <application>
+34-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:24:3-66:17
+35
+36        <!-- Notifications from other apps; Android asks the person to allow it in Settings → Notification access. -->
+37        <service
+37-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:26:5-34:15
+38            android:name="expo.modules.familyoscollect.CollectNotificationListener"
+38-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:27:9-52
+39            android:exported="false"
+39-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:29:9-33
+40            android:label="FamilyOS"
+40-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:28:9-33
+41            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+41-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:30:9-83
+42            <intent-filter>
+42-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:31:7-33:23
+43                <action android:name="android.service.notification.NotificationListenerService" />
+43-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:32:9-91
+43-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:32:17-88
+44            </intent-filter>
+45        </service>
+46        <!--
+47         The phone agent: reads the screen and acts in one app, only while a run goes. Allowed by the person in
+48         Settings → Accessibility → FamilyOS phone agent.
+49        -->
+50        <service
+50-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:37:5-48:15
+51            android:name="expo.modules.familyoscollect.FamilyosAgentService"
+51-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:38:9-45
+52            android:exported="false"
+52-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:41:9-33
+53            android:label="FamilyOS phone agent"
+53-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:39:9-45
+54            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+54-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:40:9-75
+55            <intent-filter>
+55-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:42:7-44:23
+56                <action android:name="android.accessibilityservice.AccessibilityService" />
+56-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:43:9-84
+56-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:43:17-81
+57            </intent-filter>
+58
+59            <meta-data
+59-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:45:7-47:60
+60                android:name="android.accessibilityservice"
+60-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:46:11-54
+61                android:resource="@xml/familyos_agent_service" />
+61-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:47:11-57
+62        </service>
+63        <!-- Live SMS: sends each new SMS to FamilyOS within seconds, with a notification that always shows. -->
+64        <service
+64-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:50:5-57:15
+65            android:name="expo.modules.familyoscollect.CollectSmsService"
+65-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:51:9-42
+66            android:exported="false"
+66-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:52:9-33
+67            android:foregroundServiceType="specialUse" >
+67-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:53:9-51
+68            <property
+68-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:54:7-56:142
+69                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+69-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:55:11-70
+70                android:value="Collects the person&apos;s new SMS as they arrive, for their own family assistant, while switched on in Data sources." />
+70-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:56:11-139
+71        </service>
+72
+73        <receiver
+73-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:58:5-65:16
+74            android:name="expo.modules.familyoscollect.CollectBootReceiver"
+74-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:59:9-44
+75            android:exported="true" >
+75-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:60:9-32
+76            <intent-filter>
+76-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:61:7-64:23
+77                <action android:name="android.intent.action.BOOT_COMPLETED" />
+77-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:62:9-71
+77-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:62:17-68
+78                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+78-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:63:9-76
+78-->/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android/src/main/AndroidManifest.xml:63:17-73
+79            </intent-filter>
+80        </receiver>
+81    </application>
+82
+83</manifest>

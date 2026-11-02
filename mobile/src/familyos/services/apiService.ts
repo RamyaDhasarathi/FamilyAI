@@ -19,6 +19,7 @@ import type {
   TodayItem,
   WalkthroughStep,
 } from './interfaces';
+import * as WebBrowser from 'expo-web-browser';
 import { ApiError, clearToken, request, saveToken } from './api';
 
 // ── Backend shapes (familyos/models.py), only the fields read here ──────────
@@ -28,6 +29,8 @@ export interface ApiMember {
   household_id: string;
   display_name: string;
   role: 'guardian' | 'adult' | 'child';
+  /** Who they are in the circle (parent, sibling, spouse, caregiver, other); adults only. */
+  circle_role?: string | null;
   email?: string | null;
   phone?: string | null;
   date_of_birth?: string | null;
@@ -359,9 +362,11 @@ export const apiService: FamilyOSService = {
     };
   },
 
-  // The scenario switcher is a demo device; the backend has one truth.
+  // The scenario switcher is a demo device; the backend has one truth. Not forced: an Accept drops the snapshot
+  // (resolveItem), so a fresh one is at most FRESH_MS old; forcing it read /brief (~20 s on the shared database) a second
+  // time beside the start-up read.
   async getNeedsYou() {
-    const s = await snapshot(true);
+    const s = await snapshot();
     return needsFrom(s);
   },
 
@@ -443,8 +448,8 @@ export const apiService: FamilyOSService = {
         const r = await request<{ token: string }>('POST', '/sign-in/dev', { email: address });
         await saveToken(r.token);
       }
+      // Signed in: the token is kept. Home's data is the Loading screen's to read (it can take longer than a sign-in should).
       snap = null;
-      await snapshot(true);
       return ok('Welcome back');
     } catch (e) {
       await clearToken();
@@ -456,6 +461,38 @@ export const apiService: FamilyOSService = {
     }
   },
 
+  async signUp({ name, email, family, founding: fromGoogle }) {
+    // The backend mails a founding ticket to prove the address. Until mail is
+    // set up, the development sign-up (FAMILYOS_DEV_SIGN_IN) hands it back;
+    // the household itself is made by the real POST /households.
+    const display = name.trim();
+    const address = email.replace(/\s+/g, '').toLowerCase();
+    const home = family.trim();
+    if (!display) return { ok: false, message: 'Enter your name.' };
+    if (!address) return { ok: false, message: 'Enter your email address.' };
+    if (!home) return { ok: false, message: 'Give your family a name.' };
+    try {
+      await clearToken();
+      const founding = fromGoogle ?? (await request<{ founding: string }>('POST', '/sign-up/dev', { email: address })).founding;
+      const r = await request<{ credentials: { token: string } }>('POST', '/households', {
+        name: home,
+        guardian: { display_name: display, email: address },
+        founding,
+      });
+      await saveToken(r.credentials.token);
+      // The family exists and the phone is signed in to it: done. Home's data is the Loading screen's to read.
+      snap = null;
+      return ok('Your family is ready');
+    } catch (e) {
+      await clearToken();
+      if (e instanceof ApiError && e.status === 404) {
+        return { ok: false, message: "This server doesn't allow signing up by email alone (FAMILYOS_DEV_SIGN_IN)." };
+      }
+      // 422 carries the server's sentence (an address already in a family is told to log in).
+      return { ok: false, message: e instanceof Error ? e.message : 'Could not create your family.' };
+    }
+  },
+
   async logOut() {
     // End this session on the server too, then forget it here.
     await request('POST', '/signout').catch(() => undefined);
@@ -464,3 +501,45 @@ export const apiService: FamilyOSService = {
     return ok('Logged out');
   },
 };
+
+/** What "Continue with Google" ended in: signed in, an address no family uses yet (Sign up with Google's ticket), or why not. */
+export type GoogleResult = ResolveResult | { ok: 'signUp'; email: string; founding: string };
+
+/**
+ * "Continue with Google" on the phone, through our backend's phone-app flow (`GET /sign-in/google?native=true`,
+ * identity.google_sign_in_url): Google's page opens in an in-app Chrome tab (Google refuses sign-in inside a web view), and
+ * our backend hands the session back through the app's link: `familyos://signed-in#token=…`, or
+ * `familyos://signin?signin=new#found=…&email=…`, or `?signin=cancelled|failed`. The token rides in the fragment and is kept
+ * like the development sign-in's (SecureStore).
+ */
+export async function googleLogIn(): Promise<GoogleResult> {
+  let url: string;
+  try {
+    url = (await request<{ url: string }>('GET', '/sign-in/google?native=true')).url;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 503) return { ok: false, message: "Google sign-in isn't set up on this server yet." };
+    return { ok: false, message: e instanceof Error ? e.message : 'Could not start Google sign-in.' };
+  }
+  const res = await WebBrowser.openAuthSessionAsync(url, 'familyos://');
+  if (res.type !== 'success') return { ok: false, message: 'Google sign-in was cancelled.' };
+  const [head, fragment = ''] = res.url.split('#');
+  const hash: Record<string, string> = {};
+  for (const pair of fragment.split('&')) {
+    const [k, v = ''] = pair.split('=');
+    if (k) hash[k] = decodeURIComponent(v);
+  }
+  if (head.includes('signed-in') && hash.token) {
+    try {
+      await clearToken();
+      await saveToken(hash.token);
+      snap = null;
+      return ok('Welcome');
+    } catch (e) {
+      await clearToken();
+      return { ok: false, message: e instanceof Error ? e.message : 'Could not sign in.' };
+    }
+  }
+  if (head.includes('signin=new') && hash.found) return { ok: 'signUp', email: hash.email ?? '', founding: hash.found };
+  if (head.includes('signin=cancelled')) return { ok: false, message: 'Google sign-in was cancelled.' };
+  return { ok: false, message: 'Google sign-in did not work. Try again.' };
+}

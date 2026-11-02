@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "expo.modules.familyoscollect.familyos-collect-release-11:/values-sl/values-sl.xml",
+            "map": [
+                {
+                    "source": "/Users/rortechnologies/.gradle/caches/9.4.1/transforms/2ded56ccc586ce4da853a3abbbc36887/transformed/core-1.17.0/res/values-sl/values-sl.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,152,254,352,456,559,661,778",
+                        "endColumns": "96,101,97,103,102,101,116,100",
+                        "endOffsets": "147,249,347,451,554,656,773,874"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "expo.modules.familyoscollect.familyos-collect-mergeReleaseResources-9:/values-sl/values-sl.xml",
+            "map": [
+                {
+                    "source": "/Users/rortechnologies/.gradle/caches/9.4.1/transforms/2ded56ccc586ce4da853a3abbbc36887/transformed/core-1.17.0/res/values-sl/values-sl.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,152,254,352,456,559,661,778",
+                        "endColumns": "96,101,97,103,102,101,116,100",
+                        "endOffsets": "147,249,347,451,554,656,773,874"
+                    }
+                }
+            ]
+        }
+    ]
+}

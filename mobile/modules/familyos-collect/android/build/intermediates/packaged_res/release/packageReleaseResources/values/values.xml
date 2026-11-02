@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="familyos_agent_description">Lets FamilyOS read an app you switched on for collecting, and tap, scroll or type in it, only while you run the phone agent on it. It only reads: it never buys, sends, pays or changes anything.</string>
+</resources>

@@ -43,6 +43,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Our collecting layer (familyos/collect/vault.py): site passwords in the macOS Keychain.
+collect = ["keyring>=25"]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.23",

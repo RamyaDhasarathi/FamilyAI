@@ -2,6 +2,7 @@
 // bearer token, and one request helper. Set EXPO_PUBLIC_FAMILYOS_API (see
 // mobile/.env.example) to use the backend; unset, the app runs on mocks.
 import * as SecureStore from 'expo-secure-store';
+import * as CollectNative from '../../../modules/familyos-collect';
 
 /** e.g. http://localhost:8000 with `adb reverse tcp:8000 tcp:8000`, or the Mac's LAN address. */
 export const API_BASE = (process.env.EXPO_PUBLIC_FAMILYOS_API ?? '').replace(/\/+$/, '');
@@ -9,7 +10,9 @@ export const API_ENABLED = API_BASE.length > 0;
 
 const TOKEN_KEY = 'familyos.token';
 const SECURE_OPTS = { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY };
-const TIMEOUT_MS = 30_000;
+// Home's /brief can take 20–35 s on the shared Azure database (famos-notes/AUDIT.md, 29 Oct): a 30 s limit turned a slow
+// answer into "signed out". 90 s until the backend is hosted next to the database.
+const TIMEOUT_MS = 90_000;
 
 let token: string | null = null;
 
@@ -22,11 +25,14 @@ export async function loadToken(): Promise<string | null> {
 export async function saveToken(value: string): Promise<void> {
   token = value;
   await SecureStore.setItemAsync(TOKEN_KEY, value, SECURE_OPTS);
+  // The live SMS service sends new SMS by itself with this session (kept by Android, encrypted in its Keystore).
+  if (API_BASE) CollectNative.setSession(API_BASE, value);
 }
 
 export async function clearToken(): Promise<void> {
   token = null;
   await SecureStore.deleteItemAsync(TOKEN_KEY, SECURE_OPTS).catch(() => undefined);
+  CollectNative.clearSession(); // signed out: live SMS stops and forgets the session
 }
 
 /** The backend said the token is missing, expired or revoked. */

@@ -84,6 +84,7 @@ interface State {
   setLowPower(v: boolean): void;
   setDevCommand(cmd: Record<string, string>): void;
   logIn(email: string, password: string): Promise<boolean>;
+  signUp(input: { name: string; email: string; family: string; founding?: string }): Promise<boolean>;
   logOut(): Promise<void>;
 }
 
@@ -247,6 +248,13 @@ export const useFamilyOS = create<State>((set, get) => ({
 
   async logIn(email, password) {
     const r = await service.logIn(email, password);
+    if (r.ok) set({ loggedIn: true });
+    else get().toast(r.message, { duration: 5000 });
+    return r.ok;
+  },
+
+  async signUp(input) {
+    const r = await service.signUp(input);
     if (r.ok) set({ loggedIn: true });
     else get().toast(r.message, { duration: 5000 });
     return r.ok;

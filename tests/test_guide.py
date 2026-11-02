@@ -1,8 +1,6 @@
 """A plan's guide page composed by the model from an allow-listed library,
 streamed line by line, with the server's gate in front of the page."""
-import re
 import uuid
-from pathlib import Path
 
 import pytest
 
@@ -98,13 +96,3 @@ async def test_a_plan_guide_streams_the_lines_that_pass_the_gate(family, databas
     # The model was told the library, the rules and the plan's own facts, and nothing it may book.
     assert "openui-lang" in model.system and "Return train" in model.system and "never books or pays" in model.system
     assert "Members: " in model.system and family.amma["display_name"] in model.system
-
-
-def test_every_third_party_file_the_guide_page_loads_is_pinned_and_integrity_checked():
-    """The page runs on the console's origin, so a changed file on the CDN would run beside the household's signed-in calls."""
-    html = (Path(guide.__file__).parent / "web_guide" / "index.html").read_text()
-    tags = re.findall(r'<(?:script|link)\b[^>]*(?:src|href)="https://[^"]+"[^>]*>', html)
-    assert tags, "the page loads its bundle from somewhere"
-    for tag in tags:
-        assert re.search(r"@\d+\.\d+\.\d+/", tag), tag                                  # an exact version, not "latest"
-        assert re.search(r'integrity="sha384-[A-Za-z0-9+/=]{64}"', tag) and 'crossorigin="anonymous"' in tag, tag

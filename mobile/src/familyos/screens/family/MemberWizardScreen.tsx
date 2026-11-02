@@ -25,6 +25,8 @@ import { ToastHost } from '../../components/Toast';
 import { SECTION_ICONS, ReviewIcon } from './MemberProfileScreen';
 import { WizardFields, draftAge } from './WizardFields';
 import { WizardReview } from './WizardReview';
+import { API_ENABLED } from '../../services/api';
+import { storageNote } from '../../family/serverFields';
 
 type Step = SectionId | 'review';
 const STEPS: Step[] = [...SECTION_IDS, 'review'];
@@ -249,7 +251,7 @@ export function MemberWizardScreen({ navigation, route }: ScreenProps<'MemberWiz
             {meta?.sensitive ? (
               <View style={[styles.note, { borderColor: withAlpha(color, 0.5) }]}>
                 <ShieldCheck size={16} color={color} />
-                <AppText style={[T.small, styles.noteText]}>Demo app: these details are stored only on this device.</AppText>
+                <AppText style={[T.small, styles.noteText]}>{API_ENABLED ? storageNote(step, 'this device') : 'Demo app: these details are stored only on this device.'}</AppText>
               </View>
             ) : null}
             {step === 'review' ? (

@@ -8,6 +8,9 @@ import type { RootStackParamList } from './types';
 import { useDevLinks } from './devLinks';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { SignUpScreen } from '../screens/SignUpScreen';
+import { DataSourcesScreen } from '../screens/DataSourcesScreen';
+import { ConnectedServicesScreen } from '../screens/ConnectedServicesScreen';
 import { HomeOrbitScreen } from '../screens/HomeOrbitScreen';
 import { AgentDetailScreen } from '../screens/AgentDetailScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -40,6 +43,7 @@ export function FamilyOSNavigator() {
       >
         <Stack.Screen name="Loading" component={LoadingScreen} options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'fade' }} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Home" component={HomeOrbitScreen} options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen
           name="Agent"
@@ -47,6 +51,8 @@ export function FamilyOSNavigator() {
           options={({ route }) => ({ animation: route.params.via === 'reveal' ? 'fade' : 'slide_from_right' })}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="DataSources" component={DataSourcesScreen} />
+        <Stack.Screen name="ConnectedServices" component={ConnectedServicesScreen} />
         <Stack.Screen name="Family" component={FamilyHubScreen} />
         <Stack.Screen name="MemberProfile" component={MemberProfileScreen} />
         <Stack.Screen

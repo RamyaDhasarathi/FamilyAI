@@ -10,6 +10,7 @@ import { fonts, MAX_FONT_SCALE, type as T } from '../theme/typography';
 import { copy } from '../mocks/data';
 import { useFamilyOS } from '../store/useFamilyOS';
 import { API_ENABLED } from '../services/api';
+import { googleLogIn } from '../services/apiService';
 import type { ScreenProps } from '../navigation/types';
 import { OnboardingBackdrop } from '../graphics/OnboardingBackdrop';
 import { MiniGem } from '../graphics/MiniGem';
@@ -17,7 +18,7 @@ import { AppText } from '../components/AppText';
 import { Pressy } from '../components/Pressy';
 import { ToastHost } from '../components/Toast';
 
-function Field({ label, value, onChange, secure, toggle, shown, email }: { label: string; value: string; onChange: (s: string) => void; secure?: boolean; toggle?: () => void; shown?: boolean; email?: boolean }) {
+export function Field({ label, value, onChange, secure, toggle, shown, email, words }: { label: string; value: string; onChange: (s: string) => void; secure?: boolean; toggle?: () => void; shown?: boolean; email?: boolean; words?: boolean }) {
   return (
     <View style={styles.field}>
       <AppText style={[T.statLabel, styles.fieldLabel]}>{label}</AppText>
@@ -26,7 +27,8 @@ function Field({ label, value, onChange, secure, toggle, shown, email }: { label
           value={value}
           onChangeText={onChange}
           secureTextEntry={secure && !shown}
-          autoCapitalize="none"
+          // Names and family names start each word with a capital; addresses and passwords never.
+          autoCapitalize={words ? 'words' : 'none'}
           autoCorrect={false}
           // An email keyboard: no auto-space after a dot (vivo's adds one), @ and . on the main keys.
           keyboardType={email ? 'email-address' : 'default'}
@@ -65,6 +67,19 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
     if (ok) navigation.reset({ index: 0, routes: [{ name: 'Loading' }] });
   };
 
+  // On the backend, Google's own sign-in (services/apiService.ts googleLogIn); on the mocks, the same as Log in.
+  const google = async () => {
+    if (!API_ENABLED) return submit();
+    setBusy(true);
+    const r = await googleLogIn();
+    setBusy(false);
+    if (r.ok === true) {
+      useFamilyOS.setState({ loggedIn: true });
+      navigation.reset({ index: 0, routes: [{ name: 'Loading' }] });
+    } else if (r.ok === 'signUp') navigation.navigate('SignUp', { email: r.email, founding: r.founding });
+    else toast(r.message, { duration: 5000 });
+  };
+
   return (
     <View style={styles.root}>
       <OnboardingBackdrop />
@@ -91,11 +106,14 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
           <Pressy onPress={submit} style={[styles.primary, busy && { opacity: 0.6 }]} accessibilityLabel={copy.login.submit} disabled={busy}>
             <AppText style={[T.bodyStrong, { color: '#fff' }]}>{busy ? '…' : copy.login.submit}</AppText>
           </Pressy>
-          <Pressy onPress={submit} style={styles.secondary} accessibilityLabel={copy.login.google}>
+          <Pressy onPress={google} style={styles.secondary} accessibilityLabel={copy.login.google} disabled={busy}>
             <AppText style={T.bodyStrong}>{copy.login.google}</AppText>
           </Pressy>
           <Pressy onPress={() => toast(copy.login.otpToast)} style={styles.link} accessibilityLabel={copy.login.otp}>
             <AppText style={[T.smallStrong, { color: '#A99FFF' }]}>{copy.login.otp}</AppText>
+          </Pressy>
+          <Pressy onPress={() => navigation.navigate('SignUp')} style={styles.signUp} accessibilityLabel={copy.login.signUp}>
+            <AppText style={[T.smallStrong, { color: '#A99FFF' }]}>{copy.login.signUp}</AppText>
           </Pressy>
           <AppText style={[T.small, styles.center, styles.note]}>{API_ENABLED ? copy.login.noteServer : copy.login.note}</AppText>
         </ScrollView>
@@ -142,5 +160,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   link: { alignSelf: 'center', marginTop: 18, padding: 6 },
+  signUp: { alignSelf: 'center', marginTop: 6, padding: 6 },
   note: { marginTop: 18, fontSize: 12, color: colors.dim },
 });

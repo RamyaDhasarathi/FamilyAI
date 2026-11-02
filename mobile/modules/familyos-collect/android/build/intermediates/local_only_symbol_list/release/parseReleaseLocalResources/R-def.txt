@@ -1,0 +1,4 @@
+R_DEF: Internal format may change without notice
+local
+string familyos_agent_description
+xml familyos_agent_service

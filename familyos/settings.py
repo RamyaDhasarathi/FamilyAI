@@ -362,6 +362,20 @@ class Settings(BaseSettings):
     # Signing in is a different callback from connecting a mailbox: one has a
     # member already and the other is finding out who is asking.
     google_sign_in_redirect_uri: str = "http://localhost:8000/v1/sign-in/google/callback"
+    # Our data collecting layer (famos-notes/COLLECTION_PLAN.md, decided 30 Oct 2026). On: Google sign-in also asks to read
+    # Gmail, Calendar and Tasks, and what is read is kept in a local cache on this machine (familyos/collect/), not in the
+    # database, until it is decided where collected data goes. Off: the founder's sign-in, email only, nothing kept.
+    google_sign_in_collect: bool = False
+    # The local cache's folder (an SQLite file inside, owner-only); outside every repository.
+    collect_dir: str = "~/.familyos/collect"
+    # The decision layer's model (familyos/collect/decide.py): the local Qwen3.5 server's /methods. Unreachable, the
+    # decision is made from the registry alone.
+    collect_model_url: str = "http://127.0.0.1:8080"
+    collect_model_timeout_s: float = 90.0
+    # The browser agent (familyos/collect/browser_agent.py): Claude's browser toolset over Chromium on this Mac, signing in
+    # with Connected services. The model was chosen 30 Oct 2026; headless off shows the window as it works.
+    collect_agent_model: str = "claude-sonnet-5-5"
+    collect_browser_headless: bool = False
     gmail_enabled: bool = False
     gmail_poll_seconds: int = 300
     # What counts as worth reading. Narrow on purpose: the point is school

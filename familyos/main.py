@@ -11,8 +11,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from familyos import (
     actions,
@@ -46,6 +47,7 @@ from familyos import (
 )
 from familyos.api.routes import router
 from familyos.artifacts import HouseholdUnavailable, TooLarge
+from familyos.collect.routes import router as collect_router
 from familyos.consent import ConsentRequired
 from familyos.execution import capability, harvest, research, sessions, steel, whatsapp_reader
 from familyos.execution.disposable import Refused as ExecutionRefused
@@ -61,7 +63,9 @@ from familyos.settings import settings
 
 logger = logging.getLogger("familyos")
 
-WEB = Path(__file__).parent / "web"
+# The web app: web/ (Vite + React), built into web/dist with FAMILYOS_WEB_BASE=/app/ (decided 29 Oct 2026: it replaces the
+# founder's consoles; their copy is outside the repository).
+WEB = Path(__file__).parent.parent / "web" / "dist"
 
 
 def register_job_handlers() -> None:
@@ -188,13 +192,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await db.close()
 
 
-# Consoles whose pages carry no inline script and no inline handler (scripts/externalize_scripts.py,
-# tests/test_script_policy.py), with the one outside host each loads code from. /pay is a built bundle
-# (familyos/web_pay, committed as public/bundle.js) and /docs is Swagger UI from a pinned CDN copy with its
-# start-up script in our own file. /redoc is switched off (its page starts from an inline script); /docs is the reference.
+# Pages that carry no inline script and no inline handler (tests/test_script_policy.py), with the one outside host each
+# loads code from. /app is the web app's build (web/dist: module scripts from its own files only) and /docs is Swagger
+# UI from a pinned CDN copy with its start-up script in our own file. /redoc is switched off (its page starts from an
+# inline script); /docs is the reference.
 _SCRIPT_HOSTS = {
-    "": "", "app": "https://cdnjs.cloudflare.com", "classic": "https://cdnjs.cloudflare.com", "orbit": "", "cockpit": "",
-    "family-agent": "", "home": "", "kid": "", "guide": "https://cdn.jsdelivr.net", "pay": "", "docs": "https://cdn.jsdelivr.net",
+    "": "", "app": "", "docs": "https://cdn.jsdelivr.net",
 }
 
 # The API reference. FastAPI's own /docs page starts Swagger UI from an inline script, which the policy forbids, so the page is ours:
@@ -229,6 +232,7 @@ def _csp_for(path: str) -> str:
 def create_app(*, with_lifespan: bool = True) -> FastAPI:
     app = FastAPI(title="FamilyOS", version="0.1.0", lifespan=lifespan if with_lifespan else None, docs_url=None, redoc_url=None)
     app.include_router(router)
+    app.include_router(collect_router)      # our collecting layer (familyos/collect/)
     wallet.register(app)       # the optional family wallet: mounted always, answers 404 unless the deployment and the household chose it
 
     @app.get("/docs", include_in_schema=False)
@@ -281,24 +285,20 @@ def create_app(*, with_lifespan: bool = True) -> FastAPI:
 
     # The console is served from this app, so it shares the API's origin: the
     # bearer token goes straight on each request and no CORS rule is needed.
+    # Rendered by the server, not part of the web app: it answers whether or not web/dist is built.
+    @app.get("/e/{token}", include_in_schema=False)
+    async def emergency_page(token: str):
+        """An emergency card shared by link: no sign-in, read only, and an unknown, expired or revoked link says the same thing."""
+        from fastapi.responses import HTMLResponse
+        try:
+            return HTMLResponse(emergency.page(await emergency.open_shared(token)), headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex"})
+        except NotFound:
+            return HTMLResponse("<!doctype html><meta charset=utf-8><title>Not open</title><p>That link is not open.</p>", status_code=404, headers={"Cache-Control": "no-store"})
+
     if WEB.is_dir():
-        WELCOME = WEB.parent / "web_home" / "index.html"
-
-        @app.get("/e/{token}", include_in_schema=False)
-        async def emergency_page(token: str):
-            """An emergency card shared by link: no sign-in, read only, and an unknown, expired or revoked link says the same thing."""
-            from fastapi.responses import HTMLResponse
-            try:
-                return HTMLResponse(emergency.page(await emergency.open_shared(token)), headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex"})
-            except NotFound:
-                return HTMLResponse("<!doctype html><meta charset=utf-8><title>Not open</title><p>That link is not open.</p>", status_code=404, headers={"Cache-Control": "no-store"})
-
         @app.get("/", include_in_schema=False)
         async def root():
-            """The signed-out front page. A signed-in visitor is sent on to /app/ by the page itself
-            (it reads the console's token); sign-in and start-a-household stay in the console."""
-            if WELCOME.is_file():
-                return FileResponse(WELCOME, headers={"Cache-Control": "no-cache, must-revalidate"})
+            """The web app is the front page: it shows Log in to a signed-out visitor itself."""
             return RedirectResponse("/app/")
 
         class _Console(StaticFiles):
@@ -312,45 +312,19 @@ def create_app(*, with_lifespan: bool = True) -> FastAPI:
                 response.headers["Cache-Control"] = "no-cache, must-revalidate"
                 return response
 
-        app.mount("/app", _Console(directory=WEB, html=True), name="console")
+        class _App(_Console):
+            """The web app routes its own addresses (/app/family/m1, /app/agents/finance): any address under /app/
+            that is not a file answers index.html. A missing file (a name with a dot) stays a 404."""
 
-    # The console as it was before the Family Constellation redesign, kept at
-    # its own address for a side-by-side comparison. Same API, same sign-in
-    # (the token lives in the origin's storage), so nothing is duplicated
-    # but the three files. Google sign-in still lands on /app/.
-    CLASSIC = WEB.parent / "web_classic"
-    if CLASSIC.is_dir():
-        app.mount("/classic", _Console(directory=CLASSIC, html=True), name="classic")
+            async def get_response(self, path, scope):
+                try:
+                    return await super().get_response(path, scope)
+                except StarletteHTTPException as exc:
+                    if exc.status_code != 404 or "." in path.rsplit("/", 1)[-1]:
+                        raise
+                    return await super().get_response("index.html", scope)
 
-    # Orbit: the UI from the Master UI/UX spec (11 Oct 2026): an ambient home
-    # with the household at the centre and the spaces in orbit, a swipe-up
-    # dashboard sheet, deep layers, one FAB. Same API, same sign-in, its own
-    # address, so /app and /classic stay exactly as they are.
-    ORBIT = WEB.parent / "web_orbit"
-    if ORBIT.is_dir():
-        app.mount("/orbit", _Console(directory=ORBIT, html=True), name="orbit")
-
-    # Cockpit: the same console under the web redesign's shell (11 Oct 2026):
-    # Today as a decision queue, five jobs in the navigation, source and
-    # privacy on every decision row, labelled reversible actions, Ask as a
-    # first-class action, a sign-in that sells the trust. It borrows /app's
-    # script and stylesheet and brings its own chrome (cockpit.js, cockpit.css).
-    COCKPIT = WEB.parent / "web_cockpit"
-    if COCKPIT.is_dir():
-        app.mount("/cockpit", _Console(directory=COCKPIT, html=True), name="cockpit")
-
-    # Family Agent: a second public product story, intentionally separate from
-    # the signed-in console and its landing gate. It presents the same product
-    # through a conversation-first, family-friendly surface and sends people
-    # into /app only when they choose to start or sign in.
-    FAMILY_AGENT = WEB.parent / "web_family_agent"
-    if FAMILY_AGENT.is_dir():
-        app.mount("/family-agent", _Console(directory=FAMILY_AGENT, html=True), name="family-agent")
-
-    # Home: a quieter, product-led front page (phone screens, one idea per block), mounted beside the others to compare.
-    HOME = WEB.parent / "web_home"
-    if HOME.is_dir():
-        app.mount("/home", _Console(directory=HOME, html=True), name="home")
+        app.mount("/app", _App(directory=WEB, html=True), name="console")
 
     # MCP: a person's own assistant connects here with their own key (agents.py, mcp.py). JSON in, JSON out, no session.
     @app.post("/mcp", include_in_schema=False)
@@ -381,24 +355,6 @@ def create_app(*, with_lifespan: bool = True) -> FastAPI:
     async def mcp_get():
         from fastapi.responses import Response
         return Response(status_code=405, headers={"Allow": "POST"})
-
-    # Kid: a child's own day, opened with their own key (kid.py). Static; it holds no data, the key does the work.
-    KID = WEB.parent / "web_kid"
-    if KID.is_dir():
-        app.mount("/kid", _Console(directory=KID, html=True), name="kid")
-
-    # Pay: the guardian's card and verification screens for the payment provider, a small page built
-    # with the provider's own components (familyos/web_pay, `npm run build`); only public/ is served.
-    PAY = WEB.parent / "web_pay" / "public"
-    if PAY.is_dir():
-        app.mount("/pay", _Console(directory=PAY, html=True), name="pay")
-
-    # Guide: a pilot of generative UI (OpenUI) for a plan's guide page, 11 Oct
-    # 2026. The model composes the page from an allow-listed component
-    # library; the server forwards only lines that name those components.
-    GUIDE = WEB.parent / "web_guide"
-    if GUIDE.is_dir():
-        app.mount("/guide", _Console(directory=GUIDE, html=True), name="guide")
 
     def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
         return JSONResponse(status_code=status, content={"error": code, "detail": message, **extra})

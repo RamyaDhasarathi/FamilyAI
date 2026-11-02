@@ -16,7 +16,7 @@ import { Glass } from '../components/Glass';
 import { ClosePill } from '../components/Pills';
 import { Pressy } from '../components/Pressy';
 
-export type MenuTarget = 'Profile' | 'Family' | 'AddMember' | 'Settings' | 'Login' | { placeholder: string };
+export type MenuTarget = 'Profile' | 'Family' | 'AddMember' | 'DataSources' | 'ConnectedServices' | 'Settings' | 'Login' | { placeholder: string };
 
 interface Props {
   visible: boolean;
@@ -80,6 +80,8 @@ export function ProfileMenu({ visible, onClose, onNavigate, onLogout }: Props) {
     [copy.profileMenu.rows[0], { placeholder: copy.profileMenu.rows[0] }],
     [copy.profileMenu.rows[1], 'Family'],
     [copy.profileMenu.addMember, 'AddMember'],
+    [copy.profileMenu.dataSources, 'DataSources'],
+    [copy.profileMenu.connectedServices, 'ConnectedServices'],
     [copy.profileMenu.rows[2], { placeholder: copy.profileMenu.rows[2] }],
     [copy.profileMenu.rows[3], { placeholder: copy.profileMenu.rows[3] }],
     [copy.profileMenu.rows[4], { placeholder: copy.profileMenu.rows[4] }],

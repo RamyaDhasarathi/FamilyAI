@@ -1,0 +1,2 @@
+int string familyos_agent_description 0x0
+int xml familyos_agent_service 0x0

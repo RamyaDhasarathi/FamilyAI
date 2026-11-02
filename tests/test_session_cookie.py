@@ -123,16 +123,11 @@ async def test_the_cookie_is_not_marked_secure_on_localhost(family, sent):
 
 
 def test_no_console_script_keeps_or_sends_the_session_token():
-    """The session is the cookie. A console file may read the old localStorage key once, to trade it in and delete it, and never write it."""
+    """The session is the cookie. The web app (web/, which replaced the founder's consoles on 29 Oct 2026) never stores the
+    token or sends it as a Bearer header, and every call says it is a browser (the CSRF header)."""
     import pathlib
-    root = pathlib.Path(__file__).resolve().parent.parent / "familyos"
-    files = [root / "web" / "app.js", root / "web_classic" / "app.js", root / "web_orbit" / "orbit.js", root / "web_home" / "boot.js",
-             root / "web_guide" / "guide.js", root / "web_pay" / "src" / "main.jsx"]
-    for f in files:
-        text = f.read_text()
-        assert "setItem('familyos.token'" not in text, f.name
-        assert "'Bearer ' + store.token" not in text and "'Bearer ' + S.token" not in text and "'Bearer ' + token" not in text, f.name
-        assert "X-FamilyOS-CSRF" in text, f.name
-        if "familyos.token" in text:
-            assert "removeItem('familyos.token')" in text and "/v1/session" in text, f.name
-
+    root = pathlib.Path(__file__).resolve().parent.parent / "web" / "src" / "familyos" / "services"
+    text = (root / "api.ts").read_text()
+    assert "localStorage" not in text and "sessionStorage" not in text
+    assert "Bearer" not in text and "Authorization" not in text
+    assert "x-familyos-csrf" in text.lower() and "credentials: 'same-origin'" in text

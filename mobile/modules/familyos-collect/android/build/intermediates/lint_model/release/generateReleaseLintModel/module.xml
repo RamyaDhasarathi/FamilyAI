@@ -1,0 +1,19 @@
+<lint-module
+    format="1"
+    dir="/Users/rortechnologies/Family-os Mobile UI/famos-v0.2-baseline-snapshot-2026-10-26/mobile/modules/familyos-collect/android"
+    name=":familyos-collect"
+    type="LIBRARY"
+    maven="com.rortechnologies.familyos:familyos-collect:0.1.0"
+    agpVersion="9.2.1"
+    buildFolder="build"
+    bootClassPath="/Users/rortechnologies/Library/Android/sdk/platforms/android-37.0/android.jar:/Users/rortechnologies/Library/Android/sdk/build-tools/36.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-37.0"
+    neverShrinking="true"
+    highlightGradualR8Api="false">
+  <lintOptions
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>

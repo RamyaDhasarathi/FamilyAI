@@ -199,5 +199,8 @@ export interface FamilyOSService {
   getChatSuggestions(threadId: string): Promise<string[]>;
   setSummaryMode(mode: SummaryMode): Promise<ResolveResult>;
   logIn(email: string, password: string): Promise<ResolveResult>;
+  /** Start a new household: the person becomes its guardian and is signed in. */
+  /** `founding`: a ticket Google already gave ("Continue with Google" with an address no family uses); else the development sign-up asks for one. */
+  signUp(input: { name: string; email: string; family: string; founding?: string }): Promise<ResolveResult>;
   logOut(): Promise<ResolveResult>;
 }
