@@ -256,3 +256,29 @@ async def test_a_step_sent_twice_after_a_dropped_link_waits_for_the_first(monkey
     assert max(overlap) == 1                                          # never two model calls of one run at once
     assert [x["path"] for x in fake.asked].count("/plan") == 1        # planned once
     assert a["action"]["action"] == b["action"]["action"] == "swipe"
+
+
+async def test_out_of_steps_what_claude_read_is_kept_not_lost(family, monkeypatch):
+    monkeypatch.setattr(phone_agent, "MAX_STEPS", 2)
+    sent = claude_says(monkeypatch,
+                       reply(Use("tap", {"element": 2}, "a")),
+                       reply(Use("done", {"items": [{"id": "408-1", "date": "8 Oct", "title": "Cabin trolley", "amount": "Rs 1,291",
+                                                     "status": "Delivered"}], "note": "1 order before the steps ran out"}, "z")))
+    run = (await family.client.post("/v1/collect/phone/runs", headers=family.h("amma"), json={"package": PKG})).json()
+    step = f"/v1/collect/phone/runs/{run['run_id']}/step"
+    await family.client.post(step, headers=family.h("amma"), json={**ORDERS, "currentApp": "com.android.launcher"})   # opens the app
+    await family.client.post(step, headers=family.h("amma"), json=ORDERS)                                               # tap
+    last = (await family.client.post(step, headers=family.h("amma"), json=ORDERS)).json()                               # out of steps
+    assert last["status"] == "done" and last["kept"] == 1 and "before the steps ran out" in last["note"]
+    assert "used all 2 steps" in str(sent[-1][-1])
+
+
+async def test_out_of_steps_on_the_macs_models_the_memory_becomes_items(family, monkeypatch):
+    monkeypatch.setattr(phone_agent, "MAX_STEPS", 1)
+    local_models(monkeypatch, {"instruction": "scroll down", "remember": ["Cabin trolley · Rs 1,291 · Delivered 11 Oct"]},
+                 items=[{"title": "Cabin trolley", "amount": "Rs 1,291", "status": "Delivered", "date": "11 Oct"}])
+    run = (await family.client.post("/v1/collect/phone/runs", headers=family.h("amma"), json={"package": PKG, "engine": "local"})).json()
+    step = f"/v1/collect/phone/runs/{run['run_id']}/step"
+    await family.client.post(step, headers=family.h("amma"), json=ORDERS)
+    last = (await family.client.post(step, headers=family.h("amma"), json=ORDERS)).json()
+    assert last["status"] == "done" and last["kept"] == 1
